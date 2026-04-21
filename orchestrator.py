@@ -56,9 +56,44 @@ class Orchestrator:
         self.conversation_histories: dict[str, list] = {k: [] for k in self.agents}
 
     def route(self, user_message: str) -> str:
-        """사용자 메시지를 분석해 담당 에이전트 키를 반환합니다."""
+        """키워드 우선 매칭 → LLM 라우팅 순서로 에이전트를 결정합니다."""
         import json
 
+        msg = user_message.lower()
+
+        # 키워드 우선 매칭 (LLM보다 빠르고 정확)
+        KEYWORD_RULES = [
+            ("performance", [
+                "팀원 등록", "팀원 추가", "직원 등록", "직원 추가",
+                "팀원등록", "팀원추가", "멤버 등록", "멤버 추가",
+                "실적 입력", "실적 조회", "실적관리", "실적 관리",
+                "대시보드", "목표 설정", "ai 피드백", "피드백 생성",
+                "이름:", "역할:", "직급:", "sales_rep", "team_lead", "manager",
+            ]),
+            ("onboarding", [
+                "온보딩", "온보 딩", "교육 계획", "교육계획",
+                "멘토 배정", "멘토배정", "환영 가이드", "온보딩 플랜",
+            ]),
+            ("communication", [
+                "공지", "공지사항", "팀 공지", "메시지 보내", "미팅 일정",
+                "미팅 생성", "미팅 만들", "수신함", "알림 보내",
+            ]),
+            ("customer_management", [
+                "고객 상태", "팔로업", "상담 노트", "파이프라인",
+                "고객 노트", "전환율", "followup", "고객 id",
+            ]),
+            ("marketing", [
+                "고객 추가", "고객 등록", "고객 db", "리드", "lead",
+                "영업 스크립트", "스크립트 생성", "고객 배포", "리드 점수",
+            ]),
+        ]
+
+        for agent_key, keywords in KEYWORD_RULES:
+            for kw in keywords:
+                if kw in msg:
+                    return agent_key, f"키워드 '{kw}' 매칭"
+
+        # 키워드 매칭 실패 시 LLM 라우팅
         response = self.client.messages.create(
             model=MODEL,
             max_tokens=256,
@@ -74,14 +109,14 @@ class Orchestrator:
         raw = response.content[0].text.strip()
         try:
             parsed = json.loads(raw)
-            agent_key = parsed.get("agent", "marketing")
+            agent_key = parsed.get("agent", "performance")
             reason = parsed.get("reason", "")
         except Exception:
-            agent_key = "marketing"
+            agent_key = "performance"
             reason = ""
 
         if agent_key not in self.agents:
-            agent_key = "marketing"
+            agent_key = "performance"
 
         return agent_key, reason
 
