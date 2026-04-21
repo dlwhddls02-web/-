@@ -6,10 +6,12 @@ from pydantic import BaseModel
 
 from storage.database import init_db
 from orchestrator import Orchestrator
+from team_meeting import TeamMeeting
 
 app = FastAPI(title="영업팀 에이전트 시스템")
 init_db()
 orchestrator = Orchestrator()
+team_meeting = TeamMeeting(orchestrator)
 
 
 class ChatRequest(BaseModel):
@@ -19,6 +21,10 @@ class ChatRequest(BaseModel):
 
 class ResetRequest(BaseModel):
     agent: str | None = None
+
+
+class MeetingRequest(BaseModel):
+    topic: str | None = None
 
 
 @app.post("/chat")
@@ -58,6 +64,21 @@ async def chat(req: ChatRequest):
             "agent_description": "시스템",
             "route_reason": "",
         }
+
+
+@app.post("/meeting")
+async def meeting(req: MeetingRequest):
+    try:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(team_meeting.run, req.topic),
+            timeout=300,
+        )
+        return result
+    except asyncio.TimeoutError:
+        return {"log": [], "report": "회의 시간이 초과되었습니다.", "executed": [], "duration": 0}
+    except Exception as e:
+        print(f"[MEETING ERROR] {traceback.format_exc()}")
+        return {"log": [], "report": f"회의 중 오류가 발생했습니다: {e}", "executed": [], "duration": 0}
 
 
 @app.post("/reset")
