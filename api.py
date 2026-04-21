@@ -3,6 +3,7 @@ import traceback
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from typing import Any
 
 from storage.database import init_db
 from orchestrator import Orchestrator
@@ -18,13 +19,15 @@ class ChatRequest(BaseModel):
     message: str
     agent: str | None = None
 
-
 class ResetRequest(BaseModel):
     agent: str | None = None
 
-
-class MeetingRequest(BaseModel):
+class MeetingPlanRequest(BaseModel):
     topic: str | None = None
+
+class MeetingExecuteRequest(BaseModel):
+    assignments: list[dict[str, Any]]
+    answers: dict[str, dict[str, str]]
 
 
 @app.post("/chat")
@@ -42,43 +45,39 @@ async def chat(req: ChatRequest):
             "route_reason": result.get("route_reason", ""),
         }
     except asyncio.TimeoutError:
-        return {
-            "response": "응답 시간이 초과되었습니다. 다시 시도해주세요.",
-            "agent": "auto",
-            "agent_description": "시스템",
-            "route_reason": "",
-        }
+        return {"response": "응답 시간이 초과되었습니다.", "agent": "auto", "agent_description": "시스템", "route_reason": ""}
     except Exception as e:
-        err = traceback.format_exc()
-        print(f"[ERROR] {err}")
+        print(f"[ERROR] {traceback.format_exc()}")
         msg = str(e)
-        if "authentication" in msg.lower() or "api_key" in msg.lower() or "401" in msg:
-            msg = "API 키가 유효하지 않습니다. .env 파일의 ANTHROPIC_API_KEY를 확인해주세요."
-        elif "rate" in msg.lower():
-            msg = "API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요."
-        else:
-            msg = f"오류가 발생했습니다: {msg}"
-        return {
-            "response": msg,
-            "agent": "auto",
-            "agent_description": "시스템",
-            "route_reason": "",
-        }
+        if "authentication" in msg.lower() or "api_key" in msg.lower():
+            msg = "API 키가 유효하지 않습니다. .env 파일을 확인해주세요."
+        return {"response": f"오류: {msg}", "agent": "auto", "agent_description": "시스템", "route_reason": ""}
 
 
-@app.post("/meeting")
-async def meeting(req: MeetingRequest):
+@app.post("/meeting/plan")
+async def meeting_plan(req: MeetingPlanRequest):
     try:
         result = await asyncio.wait_for(
-            asyncio.to_thread(team_meeting.run, req.topic),
+            asyncio.to_thread(team_meeting.plan, req.topic),
+            timeout=120,
+        )
+        return result
+    except Exception as e:
+        print(f"[PLAN ERROR] {traceback.format_exc()}")
+        return {"strategy_overview": f"오류: {e}", "priority_order": [], "assignments": []}
+
+
+@app.post("/meeting/execute")
+async def meeting_execute(req: MeetingExecuteRequest):
+    try:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(team_meeting.execute, req.assignments, req.answers),
             timeout=300,
         )
         return result
-    except asyncio.TimeoutError:
-        return {"log": [], "report": "회의 시간이 초과되었습니다.", "executed": [], "duration": 0}
     except Exception as e:
-        print(f"[MEETING ERROR] {traceback.format_exc()}")
-        return {"log": [], "report": f"회의 중 오류가 발생했습니다: {e}", "executed": [], "duration": 0}
+        print(f"[EXECUTE ERROR] {traceback.format_exc()}")
+        return {"log": [], "report": f"실행 오류: {e}", "executed": [], "duration": 0}
 
 
 @app.post("/reset")

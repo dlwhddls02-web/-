@@ -5,417 +5,212 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>영업팀 에이전트</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --marketing:    #0891b2;
-      --crm:          #059669;
-      --performance:  #d97706;
-      --onboarding:   #2563eb;
-      --communication:#7c3aed;
-      --director:     #dc2626;
-      --auto:         #4b5563;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f1f5f9;
-      height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--mk:#0891b2;--crm:#059669;--pf:#d97706;--ob:#2563eb;--cm:#7c3aed;--dr:#dc2626}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f1f5f9;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
 
-    /* ── Header ── */
-    .header {
-      background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
-      color: white;
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-shrink: 0;
-      box-shadow: 0 2px 12px rgba(0,0,0,.25);
-    }
-    .header h1 { font-size: 15px; font-weight: 700; }
-    .header p  { font-size: 11px; opacity: .75; margin-top: 1px; }
-    .header-btns { margin-left: auto; display: flex; gap: 8px; }
-    .meeting-btn {
-      background: linear-gradient(135deg, #dc2626, #f97316);
-      border: none; color: white;
-      border-radius: 20px;
-      padding: 6px 14px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: opacity .2s;
-      white-space: nowrap;
-    }
-    .meeting-btn:hover { opacity: .85; }
-    .reset-btn {
-      background: rgba(255,255,255,.2);
-      border: none; color: white;
-      border-radius: 20px;
-      padding: 6px 12px;
-      font-size: 12px;
-      cursor: pointer;
-    }
-    .reset-btn:hover { background: rgba(255,255,255,.35); }
+    .header{background:linear-gradient(135deg,#1e3a5f,#2563eb);color:white;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+    .header h1{font-size:15px;font-weight:700}
+    .header p{font-size:11px;opacity:.75;margin-top:1px}
+    .hbtns{margin-left:auto;display:flex;gap:8px}
+    .mbtn{background:linear-gradient(135deg,#dc2626,#f97316);border:none;color:white;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+    .rbtn{background:rgba(255,255,255,.2);border:none;color:white;border-radius:20px;padding:6px 12px;font-size:12px;cursor:pointer}
 
-    /* ── Tabs ── */
-    .tabs-wrap {
-      background: white;
-      padding: 8px 10px;
-      display: flex;
-      gap: 7px;
-      overflow-x: auto;
-      scrollbar-width: none;
-      border-bottom: 1px solid #e5e7eb;
-      flex-shrink: 0;
-    }
-    .tabs-wrap::-webkit-scrollbar { display: none; }
-    .tab {
-      flex-shrink: 0;
-      padding: 6px 13px;
-      border-radius: 20px;
-      border: 2px solid #e5e7eb;
-      background: white;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      color: #6b7280;
-      transition: all .18s;
-      white-space: nowrap;
-    }
-    .tab.active { color: white; border-color: transparent; }
-    .tab[data-key="auto"].active          { background: var(--auto); }
-    .tab[data-key="marketing"].active     { background: var(--marketing); }
-    .tab[data-key="customer_management"].active { background: var(--crm); }
-    .tab[data-key="performance"].active   { background: var(--performance); }
-    .tab[data-key="onboarding"].active    { background: var(--onboarding); }
-    .tab[data-key="communication"].active { background: var(--communication); }
+    .tabs{background:white;padding:8px 10px;display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid #e5e7eb;flex-shrink:0}
+    .tabs::-webkit-scrollbar{display:none}
+    .tab{flex-shrink:0;padding:6px 13px;border-radius:20px;border:2px solid #e5e7eb;background:white;cursor:pointer;font-size:12px;font-weight:600;color:#6b7280;white-space:nowrap;transition:all .15s}
+    .tab.active{color:white;border-color:transparent}
+    .tab[data-key=auto].active{background:#4b5563}
+    .tab[data-key=marketing].active{background:var(--mk)}
+    .tab[data-key=customer_management].active{background:var(--crm)}
+    .tab[data-key=performance].active{background:var(--pf)}
+    .tab[data-key=onboarding].active{background:var(--ob)}
+    .tab[data-key=communication].active{background:var(--cm)}
 
-    /* ── Chat ── */
-    .chat {
-      flex: 1;
-      overflow-y: auto;
-      padding: 14px 12px 6px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
+    .chat{flex:1;overflow-y:auto;padding:14px 12px 6px;display:flex;flex-direction:column;gap:14px}
 
-    /* Welcome */
-    .welcome {
-      display: flex; flex-direction: column;
-      align-items: center; text-align: center;
-      padding: 20px 16px; color: #6b7280;
-    }
-    .welcome .logo { font-size: 44px; margin-bottom: 10px; }
-    .welcome h2 { font-size: 17px; font-weight: 700; color: #111827; margin-bottom: 6px; }
-    .welcome p  { font-size: 13px; line-height: 1.7; max-width: 300px; }
-    .meeting-hero {
-      margin: 16px 0 8px;
-      background: linear-gradient(135deg, #1e3a5f, #dc2626);
-      border-radius: 16px;
-      padding: 16px 20px;
-      color: white;
-      cursor: pointer;
-      transition: opacity .2s;
-      max-width: 320px;
-      width: 100%;
-    }
-    .meeting-hero:hover { opacity: .9; }
-    .meeting-hero h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-    .meeting-hero p  { font-size: 12px; opacity: .85; line-height: 1.5; }
-    .quick-wrap { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
-    .quick {
-      padding: 7px 13px; border-radius: 20px;
-      border: 1.5px solid #e5e7eb; background: white;
-      font-size: 12px; cursor: pointer; color: #374151;
-      transition: all .18s;
-    }
-    .quick:hover { border-color: #2563eb; color: #2563eb; }
+    .welcome{display:flex;flex-direction:column;align-items:center;text-align:center;padding:20px 16px;color:#6b7280}
+    .welcome .logo{font-size:44px;margin-bottom:10px}
+    .welcome h2{font-size:17px;font-weight:700;color:#111827;margin-bottom:6px}
+    .welcome p{font-size:13px;line-height:1.7;max-width:300px}
+    .meeting-hero{margin:16px 0 8px;background:linear-gradient(135deg,#1e3a5f,#dc2626);border-radius:16px;padding:16px 20px;color:white;cursor:pointer;max-width:320px;width:100%;transition:opacity .2s}
+    .meeting-hero:hover{opacity:.9}
+    .meeting-hero h3{font-size:15px;font-weight:700;margin-bottom:4px}
+    .meeting-hero p{font-size:12px;opacity:.85;line-height:1.5}
+    .quick-wrap{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+    .quick{padding:7px 13px;border-radius:20px;border:1.5px solid #e5e7eb;background:white;font-size:12px;cursor:pointer;color:#374151;transition:all .15s}
+    .quick:hover{border-color:#2563eb;color:#2563eb}
 
-    /* Messages */
-    .msg-row { display: flex; gap: 8px; align-items: flex-end; }
-    .msg-row.user { flex-direction: row-reverse; }
-    .avatar {
-      width: 30px; height: 30px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px; flex-shrink: 0; background: #e5e7eb;
-    }
-    .msg-row.user .avatar { background: #2563eb; }
-    .bubble-wrap { display: flex; flex-direction: column; max-width: calc(100% - 46px); }
-    .msg-row.user .bubble-wrap { align-items: flex-end; }
-    .agent-label { font-size: 10px; color: #9ca3af; margin-bottom: 3px; padding-left: 4px; }
-    .bubble {
-      padding: 10px 14px; border-radius: 18px;
-      font-size: 14px; line-height: 1.6;
-      white-space: pre-wrap; word-break: break-word;
-    }
-    .msg-row.user .bubble {
-      background: #2563eb; color: white; border-bottom-right-radius: 4px;
-    }
-    .msg-row.agent .bubble {
-      background: white; color: #1f2937;
-      border-bottom-left-radius: 4px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.08);
-    }
-    .bubble[data-agent="marketing"]           { border-left: 3px solid var(--marketing); }
-    .bubble[data-agent="customer_management"] { border-left: 3px solid var(--crm); }
-    .bubble[data-agent="performance"]         { border-left: 3px solid var(--performance); }
-    .bubble[data-agent="onboarding"]          { border-left: 3px solid var(--onboarding); }
-    .bubble[data-agent="communication"]       { border-left: 3px solid var(--communication); }
-    .bubble[data-agent="meeting"]             { border-left: 3px solid var(--director); }
+    .msg-row{display:flex;gap:8px;align-items:flex-end}
+    .msg-row.user{flex-direction:row-reverse}
+    .avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;background:#e5e7eb}
+    .msg-row.user .avatar{background:#2563eb}
+    .bubble-wrap{display:flex;flex-direction:column;max-width:calc(100% - 46px)}
+    .msg-row.user .bubble-wrap{align-items:flex-end}
+    .alabel{font-size:10px;color:#9ca3af;margin-bottom:3px;padding-left:4px}
+    .bubble{padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+    .msg-row.user .bubble{background:#2563eb;color:white;border-bottom-right-radius:4px}
+    .msg-row.agent .bubble{background:white;color:#1f2937;border-bottom-left-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+    .bubble[data-a=marketing]{border-left:3px solid var(--mk)}
+    .bubble[data-a=customer_management]{border-left:3px solid var(--crm)}
+    .bubble[data-a=performance]{border-left:3px solid var(--pf)}
+    .bubble[data-a=onboarding]{border-left:3px solid var(--ob)}
+    .bubble[data-a=communication]{border-left:3px solid var(--cm)}
+    .bubble[data-a=meeting]{border-left:3px solid var(--dr)}
 
-    /* Typing */
-    .typing-row { display: flex; gap: 8px; align-items: flex-end; }
-    .typing {
-      background: white; border-radius: 18px; border-bottom-left-radius: 4px;
-      padding: 12px 16px; display: flex; gap: 5px; align-items: center;
-      box-shadow: 0 1px 4px rgba(0,0,0,.08);
-    }
-    .typing span {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: #9ca3af; animation: bounce 1.2s infinite;
-    }
-    .typing span:nth-child(2) { animation-delay: .2s; }
-    .typing span:nth-child(3) { animation-delay: .4s; }
-    @keyframes bounce {
-      0%,60%,100% { transform: translateY(0); }
-      30%          { transform: translateY(-6px); }
-    }
+    .typing-row{display:flex;gap:8px;align-items:flex-end}
+    .typing{background:white;border-radius:18px;border-bottom-left-radius:4px;padding:12px 16px;display:flex;gap:5px;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+    .typing span{width:7px;height:7px;border-radius:50%;background:#9ca3af;animation:bounce 1.2s infinite}
+    .typing span:nth-child(2){animation-delay:.2s}
+    .typing span:nth-child(3){animation-delay:.4s}
+    @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
 
-    /* ── Meeting Modal ── */
-    .modal-overlay {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,.6);
-      z-index: 100;
-      align-items: center; justify-content: center;
-      padding: 16px;
-    }
-    .modal-overlay.open { display: flex; }
-    .modal {
-      background: white;
-      border-radius: 20px;
-      width: 100%; max-width: 520px;
-      max-height: 85vh;
-      display: flex; flex-direction: column;
-      overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0,0,0,.3);
-    }
-    .modal-header {
-      background: linear-gradient(135deg, #1e3a5f, #dc2626);
-      color: white; padding: 16px 20px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .modal-header h2 { font-size: 15px; font-weight: 700; }
-    .modal-close {
-      background: rgba(255,255,255,.2); border: none;
-      color: white; border-radius: 50%;
-      width: 28px; height: 28px;
-      cursor: pointer; font-size: 14px;
-    }
-    .modal-body { flex: 1; overflow-y: auto; padding: 16px; }
+    /* Modal */
+    .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:flex-start;justify-content:center;padding:12px;overflow-y:auto}
+    .overlay.open{display:flex}
+    .modal{background:white;border-radius:20px;width:100%;max-width:540px;margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
+    .mhead{background:linear-gradient(135deg,#1e3a5f,#dc2626);color:white;padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+    .mhead h2{font-size:15px;font-weight:700}
+    .mclose{background:rgba(255,255,255,.2);border:none;color:white;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px}
+    .mbody{padding:16px}
 
-    /* Topic input */
-    .topic-section { margin-bottom: 16px; }
-    .topic-section label { font-size: 13px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px; }
-    .topic-section input {
-      width: 100%; border: 1.5px solid #e5e7eb; border-radius: 10px;
-      padding: 10px 14px; font-size: 14px; outline: none;
-    }
-    .topic-section input:focus { border-color: #2563eb; }
-    .start-meeting-btn {
-      width: 100%; padding: 13px;
-      background: linear-gradient(135deg, #dc2626, #f97316);
-      color: white; border: none; border-radius: 12px;
-      font-size: 15px; font-weight: 700;
-      cursor: pointer; transition: opacity .2s;
-      margin-bottom: 16px;
-    }
-    .start-meeting-btn:disabled { opacity: .5; cursor: not-allowed; }
+    /* Phase 0 – start */
+    #ph0 .desc{font-size:13px;color:#6b7280;line-height:1.7;margin-bottom:14px}
+    #ph0 label{font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px}
+    #ph0 input{width:100%;border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;margin-bottom:14px}
+    #ph0 input:focus{border-color:#2563eb}
 
-    /* Meeting log */
-    .meeting-log { display: none; }
-    .meeting-log.visible { display: block; }
-    .log-title { font-size: 12px; font-weight: 700; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
-    .log-entries {
-      background: #0f172a; border-radius: 10px;
-      padding: 12px; max-height: 220px; overflow-y: auto;
-      font-family: monospace; font-size: 11px;
-      display: flex; flex-direction: column; gap: 3px;
-    }
-    .log-entry { color: #e2e8f0; line-height: 1.4; }
-    .log-entry .time { color: #64748b; margin-right: 6px; }
-    .log-entry .speaker { font-weight: 700; margin-right: 6px; }
-    .log-entry.director .speaker { color: #f87171; }
-    .log-entry.system .speaker   { color: #94a3b8; }
-    .log-entry.marketing .speaker { color: #22d3ee; }
-    .log-entry.crm .speaker      { color: #34d399; }
-    .log-entry.performance .speaker { color: #fbbf24; }
-    .log-entry.onboarding .speaker  { color: #60a5fa; }
-    .log-entry.comm .speaker        { color: #c084fc; }
+    /* Phase 1 – strategy */
+    #ph1{display:none}
+    .strategy-box{background:#f0f4ff;border-radius:12px;padding:14px;margin-bottom:16px}
+    .strategy-box h3{font-size:13px;font-weight:700;color:#1e3a5f;margin-bottom:6px}
+    .strategy-box p{font-size:13px;color:#374151;line-height:1.7}
+    .priorities{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+    .pri-badge{background:#1e3a5f;color:white;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600}
 
-    /* Meeting report */
-    .meeting-report { display: none; }
-    .meeting-report.visible { display: block; margin-top: 16px; }
-    .report-title { font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 8px; }
-    .report-content {
-      background: #f8fafc; border-radius: 10px;
-      border: 1px solid #e5e7eb;
-      padding: 14px; font-size: 13px;
-      line-height: 1.7; color: #1f2937;
-      white-space: pre-wrap; word-break: break-word;
-      max-height: 300px; overflow-y: auto;
-    }
-    .executed-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-    .badge {
-      padding: 4px 10px; border-radius: 20px;
-      font-size: 11px; font-weight: 600; color: white;
-    }
-    .badge.high   { background: #dc2626; }
-    .badge.medium { background: #d97706; }
-    .badge.low    { background: #059669; }
+    .asgn-card{border:1.5px solid #e5e7eb;border-radius:12px;padding:14px;margin-bottom:12px}
+    .asgn-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .asgn-icon{font-size:20px}
+    .asgn-title{font-size:14px;font-weight:700;color:#111827}
+    .asgn-why{font-size:12px;color:#6b7280;margin-bottom:10px;line-height:1.5}
+    .req-item{margin-bottom:10px}
+    .req-label{font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;display:flex;align-items:center;gap:4px}
+    .req-required{color:#dc2626;font-size:11px}
+    .req-input{width:100%;border:1.5px solid #e5e7eb;border-radius:8px;padding:8px 12px;font-size:13px;outline:none}
+    .req-input:focus{border-color:#2563eb}
 
-    /* Loading overlay inside modal */
-    .loading-overlay {
-      display: none;
-      flex-direction: column; align-items: center; justify-content: center;
-      padding: 32px; gap: 12px; text-align: center;
-    }
-    .loading-overlay.visible { display: flex; }
-    .spinner {
-      width: 40px; height: 40px;
-      border: 4px solid #e5e7eb;
-      border-top-color: #dc2626;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-overlay p { font-size: 13px; color: #6b7280; line-height: 1.6; }
+    /* Phase 2 – executing */
+    #ph2{display:none}
+    .spinner-wrap{display:flex;flex-direction:column;align-items:center;padding:24px;gap:12px}
+    .spinner{width:40px;height:40px;border:4px solid #e5e7eb;border-top-color:#dc2626;border-radius:50%;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spinner-wrap p{font-size:13px;color:#6b7280;text-align:center;line-height:1.6}
 
-    /* ── Input bar ── */
-    .input-bar {
-      background: white; padding: 10px 12px;
-      display: flex; gap: 8px; align-items: flex-end;
-      border-top: 1px solid #e5e7eb; flex-shrink: 0;
-    }
-    .input-bar textarea {
-      flex: 1; border: 1.5px solid #e5e7eb; border-radius: 22px;
-      padding: 10px 14px; font-size: 14px; resize: none; outline: none;
-      max-height: 110px; font-family: inherit; line-height: 1.45;
-      transition: border-color .2s; overflow-y: auto;
-    }
-    .input-bar textarea:focus { border-color: #2563eb; }
-    .send-btn {
-      width: 42px; height: 42px; border-radius: 50%;
-      border: none; background: #2563eb; color: white;
-      font-size: 17px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: background .18s; flex-shrink: 0;
-    }
-    .send-btn:hover:not(:disabled) { background: #1d4ed8; }
-    .send-btn:disabled { background: #e5e7eb; color: #9ca3af; cursor: not-allowed; }
+    /* Phase 3 – result */
+    #ph3{display:none}
+    .log-box{background:#0f172a;border-radius:10px;padding:12px;max-height:180px;overflow-y:auto;font-family:monospace;font-size:11px;display:flex;flex-direction:column;gap:3px;margin-bottom:14px}
+    .log-entry{color:#e2e8f0;line-height:1.4}
+    .log-entry .lt{color:#64748b;margin-right:5px}
+    .log-entry .ls{font-weight:700;margin-right:5px}
+    .ls-dr{color:#f87171}.ls-sys{color:#94a3b8}.ls-mk{color:#22d3ee}
+    .ls-crm{color:#34d399}.ls-pf{color:#fbbf24}.ls-ob{color:#60a5fa}.ls-cm{color:#c084fc}
+    .report-box{background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:14px;font-size:13px;line-height:1.7;color:#1f2937;white-space:pre-wrap;word-break:break-word;max-height:260px;overflow-y:auto;margin-bottom:14px}
+
+    .btn-primary{width:100%;padding:13px;background:linear-gradient(135deg,#dc2626,#f97316);color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s}
+    .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+    .btn-secondary{width:100%;padding:11px;background:#1e3a5f;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:10px}
+
+    .input-bar{background:white;padding:10px 12px;display:flex;gap:8px;align-items:flex-end;border-top:1px solid #e5e7eb;flex-shrink:0}
+    .input-bar textarea{flex:1;border:1.5px solid #e5e7eb;border-radius:22px;padding:10px 14px;font-size:14px;resize:none;outline:none;max-height:110px;font-family:inherit;line-height:1.45;transition:border-color .2s}
+    .input-bar textarea:focus{border-color:#2563eb}
+    .sbtn{width:42px;height:42px;border-radius:50%;border:none;background:#2563eb;color:white;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+    .sbtn:hover:not(:disabled){background:#1d4ed8}
+    .sbtn:disabled{background:#e5e7eb;color:#9ca3af;cursor:not-allowed}
   </style>
 </head>
 <body>
 
-<!-- Header -->
 <div class="header">
-  <div>
-    <h1>🤖 영업팀 에이전트</h1>
-    <p>Marketing · CRM · 실적 · 온보딩 · 커뮤니케이션</p>
-  </div>
-  <div class="header-btns">
-    <button class="meeting-btn" onclick="openMeeting()">🤝 팀 자율 회의</button>
-    <button class="reset-btn" onclick="resetChat()">초기화</button>
+  <div><h1>🤖 영업팀 에이전트</h1><p>Marketing · CRM · 실적 · 온보딩 · 커뮤니케이션</p></div>
+  <div class="hbtns">
+    <button class="mbtn" onclick="openModal()">🤝 팀 자율 회의</button>
+    <button class="rbtn" onclick="resetChat()">초기화</button>
   </div>
 </div>
 
-<!-- Agent tabs -->
-<div class="tabs-wrap">
-  <button class="tab active" data-key="auto"                onclick="selectTab(this)">🔀 자동</button>
-  <button class="tab"        data-key="marketing"           onclick="selectTab(this)">📊 마케팅</button>
-  <button class="tab"        data-key="customer_management" onclick="selectTab(this)">👥 고객관리</button>
-  <button class="tab"        data-key="performance"         onclick="selectTab(this)">📈 실적관리</button>
-  <button class="tab"        data-key="onboarding"          onclick="selectTab(this)">🎓 온보딩</button>
-  <button class="tab"        data-key="communication"       onclick="selectTab(this)">💬 커뮤니케이션</button>
+<div class="tabs">
+  <button class="tab active" data-key="auto"                onclick="selTab(this)">🔀 자동</button>
+  <button class="tab"        data-key="marketing"           onclick="selTab(this)">📊 마케팅</button>
+  <button class="tab"        data-key="customer_management" onclick="selTab(this)">👥 고객관리</button>
+  <button class="tab"        data-key="performance"         onclick="selTab(this)">📈 실적관리</button>
+  <button class="tab"        data-key="onboarding"          onclick="selTab(this)">🎓 온보딩</button>
+  <button class="tab"        data-key="communication"       onclick="selTab(this)">💬 커뮤니케이션</button>
 </div>
 
-<!-- Chat -->
 <div class="chat" id="chat">
   <div class="welcome" id="welcome">
     <div class="logo">🏢</div>
     <h2>영업팀 에이전트 시스템</h2>
-    <p>에이전트에게 직접 지시하거나,<br/><strong>팀 자율 회의</strong>를 열어 에이전트들이<br/>스스로 전략을 결정하고 실행하게 하세요.</p>
-
-    <div class="meeting-hero" onclick="openMeeting()">
+    <p>직접 지시하거나, 팀 자율 회의로<br/>에이전트들이 스스로 전략을 세우고<br/>실행하게 하세요.</p>
+    <div class="meeting-hero" onclick="openModal()">
       <h3>🤝 팀 자율 회의 시작</h3>
-      <p>에이전트들이 현황을 분석하고 토론한 뒤<br/>최적의 전략을 결정해 실행합니다.<br/>당신은 결과 보고서만 받으세요.</p>
+      <p>① 총괄 디렉터가 전략 수립<br/>② 에이전트들이 필요 정보 요청<br/>③ 정보 입력 후 자동 실행 + 보고</p>
     </div>
-
     <div class="quick-wrap">
       <button class="quick" onclick="send('팀원 등록해줘. 이름: 김민수, 역할: FC')">👤 팀원 등록</button>
-      <button class="quick" onclick="send('리드점수 높은 고객 DB 조회해줘')">📋 고객 조회</button>
-      <button class="quick" onclick="send('팀 전체 실적 대시보드 보여줘')">📊 실적 대시보드</button>
-      <button class="quick" onclick="send('고객 DB를 팀원들에게 배포해줘')">📤 고객 배포</button>
-      <button class="quick" onclick="send('신규 팀원 온보딩 플랜 만들어줘')">🎓 온보딩 플랜</button>
-      <button class="quick" onclick="send('팀 전체에 공지사항 보내줘')">📢 팀 공지</button>
+      <button class="quick" onclick="send('고객 DB 조회해줘')">📋 고객 조회</button>
+      <button class="quick" onclick="send('팀 실적 대시보드 보여줘')">📊 실적 대시보드</button>
+      <button class="quick" onclick="send('팀 공지 보내줘')">📢 팀 공지</button>
     </div>
   </div>
 </div>
 
-<!-- Input -->
 <div class="input-bar">
-  <textarea id="input" rows="1" placeholder="메시지를 입력하세요..."
-    onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-  <button class="send-btn" id="sendBtn" onclick="sendFromInput()">➤</button>
+  <textarea id="inp" rows="1" placeholder="메시지를 입력하세요..." onkeydown="onKey(event)" oninput="resize(this)"></textarea>
+  <button class="sbtn" id="sbtn" onclick="sendInput()">➤</button>
 </div>
 
-<!-- Meeting Modal -->
-<div class="modal-overlay" id="meetingModal">
+<!-- Modal -->
+<div class="overlay" id="overlay">
   <div class="modal">
-    <div class="modal-header">
-      <h2>🤝 팀 자율 회의</h2>
-      <button class="modal-close" id="modalCloseBtn" onclick="closeMeeting()">✕</button>
+    <div class="mhead">
+      <h2 id="mTitle">🤝 팀 자율 회의</h2>
+      <button class="mclose" id="mCloseBtn" onclick="closeModal()">✕</button>
     </div>
-    <div class="modal-body">
+    <div class="mbody">
 
-      <!-- Topic input & start button -->
-      <div id="meetingForm">
-        <div class="topic-section">
-          <label>특별 안건 (선택사항)</label>
-          <input type="text" id="topicInput" placeholder="예: 이번 달 매출 목표 달성 전략" />
+      <!-- Phase 0: 시작 -->
+      <div id="ph0">
+        <p class="desc">총괄 디렉터가 팀 현황을 분석하고 전략을 수립합니다.<br/>각 에이전트가 실행에 필요한 정보를 요청하면 입력 후 실행하세요.</p>
+        <label>특별 안건 (선택)</label>
+        <input type="text" id="topicInp" placeholder="예: 이번 달 매출 목표 달성 전략" />
+        <button class="btn-primary" id="planBtn" onclick="startPlan()">🔍 전략 수립 시작</button>
+      </div>
+
+      <!-- Phase 1: 전략 + 정보 입력 폼 -->
+      <div id="ph1">
+        <div class="strategy-box">
+          <h3>🎯 총괄 디렉터 전략</h3>
+          <p id="strategyText"></p>
+          <div class="priorities" id="priorityList"></div>
         </div>
-        <button class="start-meeting-btn" id="startMeetingBtn" onclick="startMeeting()">
-          🚀 회의 시작 — 에이전트들이 스스로 결정합니다
-        </button>
-        <div style="font-size:12px;color:#9ca3af;text-align:center;margin-top:-8px">
-          에이전트들이 현황 분석 → 토론 → 전략 결정 → 실행까지 자동으로 진행합니다
+        <div id="asgnList"></div>
+        <button class="btn-primary" id="execBtn" onclick="startExec()">🚀 준비 완료 — 에이전트 실행 시작</button>
+      </div>
+
+      <!-- Phase 2: 실행 중 -->
+      <div id="ph2">
+        <div class="spinner-wrap">
+          <div class="spinner"></div>
+          <p id="execMsg">에이전트들이 실행 중입니다...<br/>잠시 기다려주세요</p>
         </div>
       </div>
 
-      <!-- Loading -->
-      <div class="loading-overlay" id="meetingLoading">
-        <div class="spinner"></div>
-        <p id="loadingText">에이전트들이 현황을 분석하고 있습니다...<br/>잠시 기다려주세요 (1~2분 소요)</p>
-      </div>
-
-      <!-- Log -->
-      <div class="meeting-log" id="meetingLog">
-        <div class="log-title">회의 진행 로그</div>
-        <div class="log-entries" id="logEntries"></div>
-      </div>
-
-      <!-- Report -->
-      <div class="meeting-report" id="meetingReport">
-        <div class="report-title">📋 최종 결과 보고서</div>
-        <div class="report-content" id="reportContent"></div>
-        <div class="executed-badges" id="executedBadges"></div>
-        <button onclick="closeMeeting()" style="width:100%;margin-top:14px;padding:11px;background:#1e3a5f;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">
-          확인
-        </button>
+      <!-- Phase 3: 결과 -->
+      <div id="ph3">
+        <div class="log-box" id="logBox"></div>
+        <div class="report-box" id="reportBox"></div>
+        <button class="btn-secondary" onclick="closeModal()">확인</button>
       </div>
 
     </div>
@@ -423,249 +218,189 @@
 </div>
 
 <script>
-  let selectedAgent = 'auto';
-  let isLoading = false;
+  let selAgent = 'auto';
+  let busy = false;
+  let planData = null;
 
-  const AGENT_ICONS = {
-    marketing:'📊', customer_management:'👥', performance:'📈',
-    onboarding:'🎓', communication:'💬', auto:'🤖', meeting:'🎯'
-  };
-  const AGENT_NAMES = {
-    marketing:'마케팅 에이전트', customer_management:'고객관리 에이전트',
-    performance:'실적관리 에이전트', onboarding:'온보딩 에이전트',
-    communication:'팀 커뮤니케이션 에이전트', auto:'에이전트', meeting:'총괄 디렉터'
-  };
+  const ICONS = {marketing:'📊',customer_management:'👥',performance:'📈',onboarding:'🎓',communication:'💬',auto:'🤖',meeting:'🎯'};
+  const NAMES = {marketing:'마케팅 에이전트',customer_management:'고객관리 에이전트',performance:'실적관리 에이전트',onboarding:'온보딩 에이전트',communication:'팀 커뮤니케이션 에이전트',auto:'에이전트',meeting:'총괄 디렉터'};
 
-  function selectTab(el) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    el.classList.add('active');
-    selectedAgent = el.dataset.key;
+  function selTab(el){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active'); selAgent=el.dataset.key;
+  }
+  function resize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,110)+'px'}
+  function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendInput()}}
+  function sendInput(){
+    const inp=document.getElementById('inp');
+    const t=inp.value.trim(); if(!t||busy)return;
+    inp.value='';inp.style.height='auto'; send(t);
   }
 
-  function autoResize(el) {
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+  async function send(text){
+    if(busy)return;
+    hideWelcome(); appendUser(text); setLoading(true);
+    const ty=appendTyping();
+    try{
+      const r=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,agent:selAgent})});
+      const d=await r.json(); ty.remove();
+      appendAgent(d.response,d.agent,d.agent_description);
+    }catch{ty.remove();appendAgent('서버 연결 오류입니다.','auto','시스템');}
+    finally{setLoading(false);}
   }
 
-  function handleKey(e) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendFromInput(); }
+  /* ── Modal ── */
+  function showPhase(n){
+    [0,1,2,3].forEach(i=>document.getElementById('ph'+i).style.display=i===n?'block':'none');
   }
-
-  function sendFromInput() {
-    const input = document.getElementById('input');
-    const text = input.value.trim();
-    if (!text || isLoading) return;
-    input.value = ''; input.style.height = 'auto';
-    send(text);
+  function openModal(){
+    document.getElementById('overlay').classList.add('open');
+    document.getElementById('mTitle').textContent='🤝 팀 자율 회의';
+    document.getElementById('mCloseBtn').disabled=false;
+    showPhase(0);
   }
+  function closeModal(){document.getElementById('overlay').classList.remove('open');}
 
-  async function send(text) {
-    if (isLoading) return;
-    hideWelcome();
-    appendUser(text);
-    setLoading(true);
-    const typingEl = appendTyping();
-    try {
-      const res = await fetch('/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, agent: selectedAgent })
-      });
-      const data = await res.json();
-      typingEl.remove();
-      appendAgent(data.response, data.agent, data.agent_description);
-    } catch {
-      typingEl.remove();
-      appendAgent('서버 연결 오류입니다.', 'auto', '시스템');
-    } finally {
-      setLoading(false);
+  /* Phase 0 → Phase 1 */
+  async function startPlan(){
+    const topic=document.getElementById('topicInp').value.trim()||null;
+    document.getElementById('planBtn').disabled=true;
+    document.getElementById('planBtn').textContent='⏳ 분석 중...';
+    try{
+      const r=await fetch('/meeting/plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic})});
+      planData=await r.json();
+      renderPlan(planData);
+      showPhase(1);
+    }catch(e){
+      alert('전략 수립 오류: '+e.message);
+      document.getElementById('planBtn').disabled=false;
+      document.getElementById('planBtn').textContent='🔍 전략 수립 시작';
     }
   }
 
-  /* ── Meeting ── */
-  function openMeeting() {
-    document.getElementById('meetingModal').classList.add('open');
-    document.getElementById('meetingForm').style.display = 'block';
-    document.getElementById('meetingLoading').classList.remove('visible');
-    document.getElementById('meetingLog').classList.remove('visible');
-    document.getElementById('meetingReport').classList.remove('visible');
-    document.getElementById('topicInput').value = '';
-    document.getElementById('startMeetingBtn').disabled = false;
-  }
-
-  function closeMeeting() {
-    document.getElementById('meetingModal').classList.remove('open');
-  }
-
-  async function startMeeting() {
-    const topic = document.getElementById('topicInput').value.trim() || null;
-    document.getElementById('meetingForm').style.display = 'none';
-    document.getElementById('meetingLoading').classList.add('visible');
-    document.getElementById('modalCloseBtn').disabled = true;
-
-    const loadingMsgs = [
-      '에이전트들이 현황을 분석하고 있습니다...',
-      '총괄 디렉터가 전략을 수립 중입니다...',
-      '각 에이전트에게 실행 지시 중입니다...',
-      '실행 결과를 취합하고 있습니다...'
-    ];
-    let msgIdx = 0;
-    const loadingInterval = setInterval(() => {
-      msgIdx = (msgIdx + 1) % loadingMsgs.length;
-      document.getElementById('loadingText').textContent = loadingMsgs[msgIdx];
-    }, 4000);
-
-    try {
-      const res = await fetch('/meeting', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic })
-      });
-      const data = await res.json();
-      clearInterval(loadingInterval);
-      document.getElementById('meetingLoading').classList.remove('visible');
-      showMeetingResult(data);
-    } catch (e) {
-      clearInterval(loadingInterval);
-      document.getElementById('meetingLoading').classList.remove('visible');
-      document.getElementById('meetingForm').style.display = 'block';
-      alert('회의 중 오류가 발생했습니다: ' + e.message);
-    } finally {
-      document.getElementById('modalCloseBtn').disabled = false;
-    }
-  }
-
-  function showMeetingResult(data) {
-    // Log
-    const logEl = document.getElementById('meetingLog');
-    const entriesEl = document.getElementById('logEntries');
-    entriesEl.innerHTML = '';
-    (data.log || []).forEach(entry => {
-      const div = document.createElement('div');
-      div.className = 'log-entry ' + getSpeakerClass(entry.speaker);
-      div.innerHTML = `<span class="time">${entry.time}</span><span class="speaker">${escHtml(entry.speaker)}</span>${escHtml(entry.message)}`;
-      entriesEl.appendChild(div);
+  function renderPlan(data){
+    document.getElementById('strategyText').textContent=data.strategy_overview||'';
+    const pl=document.getElementById('priorityList');
+    pl.innerHTML='';
+    (data.priority_order||[]).forEach((p,i)=>{
+      const b=document.createElement('span');
+      b.className='pri-badge';b.textContent=`${i+1}. ${p}`;pl.appendChild(b);
     });
-    logEl.classList.add('visible');
-    entriesEl.scrollTop = entriesEl.scrollHeight;
-
-    // Report
-    const reportEl = document.getElementById('meetingReport');
-    document.getElementById('reportContent').textContent = data.report || '';
-
-    const badgesEl = document.getElementById('executedBadges');
-    badgesEl.innerHTML = '';
-    (data.executed || []).forEach(e => {
-      const b = document.createElement('span');
-      b.className = `badge ${e.priority}`;
-      b.textContent = `${e.label}`;
-      badgesEl.appendChild(b);
+    const al=document.getElementById('asgnList');
+    al.innerHTML='';
+    (data.assignments||[]).forEach(asgn=>{
+      const card=document.createElement('div');
+      card.className='asgn-card';
+      const icon=ICONS[asgn.agent]||'🤖';
+      const reqs=(asgn.requirements||[]).map(req=>`
+        <div class="req-item">
+          <div class="req-label">
+            ${esc(req.label)}
+            ${req.required?'<span class="req-required">*필수</span>':'<span style="color:#9ca3af;font-size:11px">선택</span>'}
+          </div>
+          <input class="req-input" data-agent="${esc(asgn.agent)}" data-key="${esc(req.key)}"
+            placeholder="${esc(req.placeholder||req.question||'')}" type="text" />
+        </div>`).join('');
+      card.innerHTML=`
+        <div class="asgn-header">
+          <span class="asgn-icon">${icon}</span>
+          <span class="asgn-title">${esc(NAMES[asgn.agent]||asgn.agent)} — ${esc(asgn.task_title||'')}</span>
+        </div>
+        <div class="asgn-why">${esc(asgn.why||'')}</div>
+        ${reqs}`;
+      al.appendChild(card);
     });
-
-    reportEl.classList.add('visible');
-
-    // Also show in main chat
-    hideWelcome();
-    appendAgent(
-      `✅ 팀 자율 회의 완료\n\n${data.report}`,
-      'meeting', '🎯 총괄 디렉터 보고서'
-    );
   }
 
-  function getSpeakerClass(speaker) {
-    if (speaker.includes('총괄') || speaker.includes('디렉터')) return 'director';
-    if (speaker.includes('시스템')) return 'system';
-    if (speaker.includes('마케팅')) return 'marketing';
-    if (speaker.includes('고객관리')) return 'crm';
-    if (speaker.includes('실적')) return 'performance';
-    if (speaker.includes('온보딩')) return 'onboarding';
-    if (speaker.includes('커뮤니케이션')) return 'comm';
-    return 'system';
-  }
-
-  /* ── Chat helpers ── */
-  function hideWelcome() {
-    const w = document.getElementById('welcome');
-    if (w) w.remove();
-  }
-
-  function appendUser(text) {
-    const chat = document.getElementById('chat');
-    const row = document.createElement('div');
-    row.className = 'msg-row user';
-    row.innerHTML = `<div class="avatar">😊</div>
-      <div class="bubble-wrap"><div class="bubble">${escHtml(text)}</div></div>`;
-    chat.appendChild(row); scrollBottom();
-  }
-
-  function appendAgent(text, agentKey, agentDesc) {
-    const chat = document.getElementById('chat');
-    const icon = AGENT_ICONS[agentKey] || '🤖';
-    const name = agentDesc || AGENT_NAMES[agentKey] || '에이전트';
-    const row = document.createElement('div');
-    row.className = 'msg-row agent';
-    row.innerHTML = `<div class="avatar">${icon}</div>
-      <div class="bubble-wrap">
-        <div class="agent-label">${escHtml(name)}</div>
-        <div class="bubble" data-agent="${agentKey}">${formatText(text)}</div>
-      </div>`;
-    chat.appendChild(row); scrollBottom();
-  }
-
-  function appendTyping() {
-    const chat = document.getElementById('chat');
-    const row = document.createElement('div');
-    row.className = 'typing-row';
-    row.innerHTML = `<div class="avatar">🤖</div>
-      <div class="typing"><span></span><span></span><span></span></div>`;
-    chat.appendChild(row); scrollBottom();
-    return row;
-  }
-
-  function setLoading(on) {
-    isLoading = on;
-    document.getElementById('sendBtn').disabled = on;
-    document.getElementById('input').disabled = on;
-  }
-
-  function scrollBottom() {
-    const chat = document.getElementById('chat');
-    chat.scrollTop = chat.scrollHeight;
-  }
-
-  async function resetChat() {
-    if (!confirm('대화 이력을 초기화할까요?')) return;
-    await fetch('/reset', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ agent: null })
+  /* Phase 1 → Phase 2 → Phase 3 */
+  async function startExec(){
+    if(!planData)return;
+    // 답변 수집
+    const answers={};
+    document.querySelectorAll('.req-input').forEach(inp=>{
+      const a=inp.dataset.agent, k=inp.dataset.key, v=inp.value.trim();
+      if(v){if(!answers[a])answers[a]={};answers[a][k]=v;}
     });
-    const chat = document.getElementById('chat');
-    chat.innerHTML = `<div class="welcome" id="welcome">
-      <div class="logo">🏢</div>
-      <h2>영업팀 에이전트 시스템</h2>
-      <p>에이전트에게 직접 지시하거나,<br/><strong>팀 자율 회의</strong>를 열어 에이전트들이<br/>스스로 전략을 결정하고 실행하게 하세요.</p>
-      <div class="meeting-hero" onclick="openMeeting()">
-        <h3>🤝 팀 자율 회의 시작</h3>
-        <p>에이전트들이 현황을 분석하고 토론한 뒤<br/>최적의 전략을 결정해 실행합니다.<br/>당신은 결과 보고서만 받으세요.</p>
-      </div>
-      <div class="quick-wrap">
-        <button class="quick" onclick="send('팀원 등록해줘. 이름: 김민수, 역할: FC')">👤 팀원 등록</button>
-        <button class="quick" onclick="send('리드점수 높은 고객 DB 조회해줘')">📋 고객 조회</button>
-        <button class="quick" onclick="send('팀 전체 실적 대시보드 보여줘')">📊 실적 대시보드</button>
-        <button class="quick" onclick="send('고객 DB를 팀원들에게 배포해줘')">📤 고객 배포</button>
-      </div>
-    </div>`;
+    document.getElementById('mCloseBtn').disabled=true;
+    showPhase(2);
+    const msgs=['에이전트들이 실행 중입니다...','마케팅 에이전트 작업 중...','고객관리 에이전트 작업 중...','실적관리 에이전트 작업 중...'];
+    let mi=0;
+    const iv=setInterval(()=>{mi=(mi+1)%msgs.length;document.getElementById('execMsg').textContent=msgs[mi];},3000);
+    try{
+      const r=await fetch('/meeting/execute',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({assignments:planData.assignments||[],answers})});
+      const data=await r.json();
+      clearInterval(iv);
+      renderResult(data);
+      showPhase(3);
+      hideWelcome();
+      appendAgent('✅ 팀 자율 회의 완료\n\n'+data.report,'meeting','🎯 총괄 디렉터 보고서');
+    }catch(e){
+      clearInterval(iv);
+      alert('실행 오류: '+e.message);
+      showPhase(1);
+    }finally{document.getElementById('mCloseBtn').disabled=false;}
   }
 
-  function escHtml(str) {
-    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  function renderResult(data){
+    const lb=document.getElementById('logBox');
+    lb.innerHTML='';
+    (data.log||[]).forEach(e=>{
+      const div=document.createElement('div');
+      div.className='log-entry';
+      const cls=speakerCls(e.speaker);
+      div.innerHTML=`<span class="lt">${esc(e.time)}</span><span class="ls ${cls}">${esc(e.speaker)}</span>${esc(e.message)}`;
+      lb.appendChild(div);
+    });
+    lb.scrollTop=lb.scrollHeight;
+    document.getElementById('reportBox').textContent=data.report||'';
   }
 
-  function formatText(str) {
-    return escHtml(str)
-      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+  function speakerCls(s){
+    if(s.includes('총괄')||s.includes('디렉터'))return 'ls-dr';
+    if(s.includes('시스템'))return 'ls-sys';
+    if(s.includes('마케팅'))return 'ls-mk';
+    if(s.includes('고객관리'))return 'ls-crm';
+    if(s.includes('실적'))return 'ls-pf';
+    if(s.includes('온보딩'))return 'ls-ob';
+    if(s.includes('커뮤니케이션'))return 'ls-cm';
+    return 'ls-sys';
+  }
+
+  /* Chat helpers */
+  function hideWelcome(){const w=document.getElementById('welcome');if(w)w.remove();}
+  function appendUser(text){
+    const c=document.getElementById('chat');
+    const r=document.createElement('div');r.className='msg-row user';
+    r.innerHTML=`<div class="avatar">😊</div><div class="bubble-wrap"><div class="bubble">${esc(text)}</div></div>`;
+    c.appendChild(r);scrollB();
+  }
+  function appendAgent(text,ak,desc){
+    const c=document.getElementById('chat');
+    const icon=ICONS[ak]||'🤖';const name=desc||NAMES[ak]||'에이전트';
+    const r=document.createElement('div');r.className='msg-row agent';
+    r.innerHTML=`<div class="avatar">${icon}</div><div class="bubble-wrap"><div class="alabel">${esc(name)}</div><div class="bubble" data-a="${ak}">${fmt(text)}</div></div>`;
+    c.appendChild(r);scrollB();
+  }
+  function appendTyping(){
+    const c=document.getElementById('chat');
+    const r=document.createElement('div');r.className='typing-row';
+    r.innerHTML=`<div class="avatar">🤖</div><div class="typing"><span></span><span></span><span></span></div>`;
+    c.appendChild(r);scrollB();return r;
+  }
+  function setLoading(on){busy=on;document.getElementById('sbtn').disabled=on;document.getElementById('inp').disabled=on;}
+  function scrollB(){const c=document.getElementById('chat');c.scrollTop=c.scrollHeight;}
+  async function resetChat(){
+    if(!confirm('대화 이력을 초기화할까요?'))return;
+    await fetch('/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:null})});
+    location.reload();
+  }
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function fmt(s){
+    return esc(s)
       .replace(/### (.+)/g,'<strong style="font-size:15px">$1</strong>')
       .replace(/## (.+)/g,'<strong style="font-size:16px">$1</strong>')
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
       .replace(/`(.+?)`/g,'<code style="background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:13px">$1</code>');
   }
 </script>
