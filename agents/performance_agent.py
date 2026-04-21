@@ -20,6 +20,8 @@ SYSTEM_PROMPT = """당신은 영업팀의 실적관리 에이전트입니다.
 - 고객 만족도: 1-5점 평균
 - 리드 전환율: 담당 고객 중 계약 성사 비율
 
+팀원 등록 시 역할(직급)은 FC, SM, 팀장, 매니저 등 사용자가 입력한 그대로 저장하세요.
+역할 값을 임의로 변경하거나 거부하지 마세요.
 피드백은 구체적이고 실행 가능한 개선안을 포함해야 합니다.
 항상 한국어로 응답하세요."""
 
@@ -120,14 +122,14 @@ TOOLS = [
                 "name": {"type": "string", "description": "이름"},
                 "role": {
                     "type": "string",
-                    "description": "역할 (sales_rep/team_lead/manager)",
+                    "description": "역할 또는 직급 (FC, SM, 팀장, sales_rep 등 자유 입력)",
                 },
                 "email": {"type": "string", "description": "이메일"},
                 "phone": {"type": "string", "description": "전화번호"},
                 "department": {"type": "string", "description": "부서"},
                 "hire_date": {"type": "string", "description": "입사일 (YYYY-MM-DD)"},
             },
-            "required": ["name", "role"],
+            "required": ["name"],
         },
     },
 ]
