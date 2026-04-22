@@ -25,9 +25,9 @@ class ResetRequest(BaseModel):
     agent: str | None = None
 
 class MeetingJoinRequest(BaseModel):
-    meeting_id: int
-    assignments: list[dict[str, Any]]
-    answers: dict[str, dict[str, str]]
+    meeting_id: int | None = None
+    assignments: list[dict[str, Any]] = []
+    answers: dict[str, Any] = {}
 
 class MeetingPlanRequest(BaseModel):
     topic: str | None = None
@@ -86,6 +86,7 @@ async def meeting_plan(req: MeetingPlanRequest):
 @router.post("/meeting/execute")
 async def meeting_execute(req: MeetingJoinRequest):
     """Phase 2: 에이전트 실행 + 회의 결과 저장"""
+    log_activity("🏢 회의", f"자율 회의 실행 시작 ({len(req.assignments)}개 업무)", status="info")
     try:
         from team_meeting import TeamMeeting
         orch = _get_orch()
@@ -96,10 +97,14 @@ async def meeting_execute(req: MeetingJoinRequest):
         )
         if req.meeting_id:
             complete_meeting(req.meeting_id, result)
-        log_activity("🏢 회의", f"자율 회의 실행 완료 ({len(result.get('executed', []))}건)", status="success")
+        log_activity("🏢 회의", f"자율 회의 완료 ({len(result.get('executed', []))}건 실행)", status="success")
         return result
+    except asyncio.TimeoutError:
+        log_activity("🏢 회의", "자율 회의 시간 초과 (5분)", status="error")
+        return {"log": [], "report": "⏱️ 실행 시간이 초과됐습니다 (5분). 업무 수를 줄여서 다시 시도해주세요.", "executed": [], "duration": 300}
     except Exception as e:
         print(f"[EXECUTE ERROR] {traceback.format_exc()}")
+        log_activity("🏢 회의", f"자율 회의 오류: {str(e)[:80]}", status="error")
         return {"log": [], "report": f"실행 오류: {e}", "executed": [], "duration": 0}
 
 

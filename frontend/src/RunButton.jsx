@@ -37,19 +37,24 @@ export default function RunButton({ api, activeMeeting, agents }) {
 
   // Phase 2: 실행
   const execute = async () => {
-    if (!planData?.assignments?.length) return;
+    const assignments = planData?.assignments || [];
     setBusy(true);
     setPhase("executing");
     try {
-      const res = await axios.post(`${api}/api/meeting/execute`, {
-        meeting_id: meetingId || 0,
-        assignments: planData.assignments,
-        answers,
-      });
+      const res = await axios.post(
+        `${api}/api/meeting/execute`,
+        {
+          meeting_id: meetingId ?? 0,
+          assignments,
+          answers,
+        },
+        { timeout: 300000 }   // 5분 타임아웃
+      );
       setResult(res.data);
       setPhase("done");
     } catch (e) {
-      alert(`실행 오류: ${e.message}`);
+      const msg = e.response?.data?.detail || e.message || "알 수 없는 오류";
+      alert(`실행 오류: ${msg}`);
       setPhase("form");
     } finally {
       setBusy(false);
