@@ -173,6 +173,41 @@ def init_db():
         created_at TEXT
     )""")
 
+    c.execute("""CREATE TABLE IF NOT EXISTS meetings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        organizer_id INTEGER,
+        meeting_type TEXT DEFAULT 'weekly',
+        scheduled_at TEXT NOT NULL,
+        duration_minutes INTEGER DEFAULT 60,
+        agenda TEXT,
+        attendees TEXT,
+        status TEXT DEFAULT 'scheduled',
+        notes TEXT,
+        created_at TEXT
+    )""")
+
+    c.execute("""CREATE TABLE IF NOT EXISTS onboarding_tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        plan_id INTEGER NOT NULL,
+        task_name TEXT NOT NULL,
+        description TEXT,
+        category TEXT,
+        due_date TEXT,
+        status TEXT DEFAULT 'pending',
+        completion_date TEXT,
+        notes TEXT
+    )""")
+
+    c.execute("""CREATE TABLE IF NOT EXISTS contract_renewals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        contract_id INTEGER NOT NULL,
+        renewal_date TEXT NOT NULL,
+        notified INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'pending',
+        created_at TEXT
+    )""")
+
     conn.commit()
     conn.close()
 

@@ -1,8 +1,8 @@
 """
-팀 자율 회의 엔진 v2
+팀 자율 회의 엔진 v3
 
-Phase 1 (Plan):  총괄 디렉터가 전략 수립 → 각 에이전트가 필요 정보 목록 반환
-Phase 2 (Execute): 사용자 입력값 + 지시로 에이전트 실제 실행 → 보고서
+Phase 1 (Plan):  총괄 디렉터가 팀 현황 분석 → 전략 수립 → 팀장에게 필요 정보 요청
+Phase 2 (Execute): 팀장 입력 + 에이전트 실행 → 결과 보고서
 """
 
 import json
@@ -10,92 +10,46 @@ from datetime import datetime
 import anthropic
 
 from config import ANTHROPIC_API_KEY, MODEL
-from storage.database import get_connection
+from backend.memory import gather_team_state
 
-# ── 전략 수립 프롬프트 ─────────────────────────────────────────────────────
-STRATEGY_PROMPT = """당신은 영업팀 AI 총괄 디렉터입니다.
+STRATEGY_PROMPT = """당신은 보험 영업팀 AI 총괄 디렉터입니다.
 
-팀 현황 데이터를 분석하고 성장 전략을 수립합니다.
-각 에이전트에게 업무를 배분하되, 업무 실행에 필요한 정보를 사용자(팀장)에게 요청합니다.
+팀 현황 데이터를 분석하고 이번 주 실행 전략을 수립합니다.
+각 에이전트에게 업무를 배분하되, 실행에 필요한 정보를 팀장에게 요청합니다.
 
-중요: 사용자가 제공할 수 있는 현실적인 정보만 요청하세요.
-(예: 타겟 업종, 월 목표 매출, 고객 예산 범위, 팀원 이름/연락처 등)
+사용 가능한 에이전트:
+- customer   : 고객 추가·리드 스코어링·팔로업·CRM
+- contract   : 보험 계약 등록·현황 분석
+- schedule   : 팀 미팅·온보딩·공지·일정
+- report     : 팀원 실적·목표·AI 피드백·보고서
+- sns        : 인스타그램·페이스북 자동 포스팅·콘텐츠 캘린더
+
+중요: 팀장이 실제로 제공할 수 있는 정보만 요청하세요.
+(예: 이번 주 목표 계약 건수, 집중 타겟 업종, 특별 공지 내용 등)
 
 반드시 아래 JSON 형식으로만 응답하세요:
 {
-  "strategy_overview": "현황 분석과 전략 방향 3-4문장",
+  "strategy_overview": "팀 현황 분석 + 이번 주 핵심 전략 3~4문장",
   "priority_order": ["1순위 목표", "2순위 목표", "3순위 목표"],
   "assignments": [
     {
-      "agent": "에이전트키(marketing/customer_management/performance/onboarding/communication)",
+      "agent": "에이전트키(customer/contract/schedule/report/sns)",
       "task_title": "업무 제목",
       "task_description": "수행할 업무 상세 설명",
       "why": "이 업무가 팀 성장에 중요한 이유",
-      "execution_prompt": "정보를 받은 후 에이전트에게 전달할 지시문 템플릿 ({{변수명}} 형태로 사용자 입력값 삽입)",
+      "execution_prompt": "에이전트에게 전달할 지시문 ({{변수명}} 형태로 팀장 입력값 삽입)",
       "requirements": [
         {
           "key": "변수명",
           "label": "항목명",
           "question": "팀장에게 물어볼 질문",
           "placeholder": "예시 답변",
-          "required": true,
-          "type": "text"
+          "required": true
         }
       ]
     }
   ]
 }"""
-
-# ── DB 현황 수집 ──────────────────────────────────────────────────────────
-def gather_team_state() -> dict:
-    conn = get_connection()
-    c = conn.cursor()
-    now = datetime.now()
-    period = now.strftime("%Y-%m")
-    today = now.strftime("%Y-%m-%d")
-    state = {}
-    try:
-        c.execute("SELECT COUNT(*) as cnt FROM team_members WHERE is_active=1")
-        state["team_size"] = c.fetchone()["cnt"]
-
-        c.execute("SELECT id, name, role FROM team_members WHERE is_active=1")
-        state["team_members"] = [dict(r) for r in c.fetchall()]
-
-        c.execute("SELECT COUNT(*) as cnt FROM customers")
-        total = c.fetchone()["cnt"]
-        c.execute("SELECT COUNT(*) as cnt FROM customers WHERE assigned_to IS NULL")
-        unassigned = c.fetchone()["cnt"]
-        state["marketing"] = {"총 고객수": total, "미배정 고객": unassigned}
-
-        c.execute("SELECT status, COUNT(*) as cnt FROM customers GROUP BY status")
-        state["pipeline"] = {r["status"]: r["cnt"] for r in c.fetchall()}
-
-        c.execute("""SELECT tm.name, COALESCE(pr.sales_amount,0) as sales,
-               COALESCE(pt.target_sales_amount,0) as target
-               FROM team_members tm
-               LEFT JOIN performance_records pr ON tm.id=pr.member_id AND pr.period=?
-               LEFT JOIN performance_targets pt ON tm.id=pt.member_id AND pt.period=?
-               WHERE tm.is_active=1""", (period, period))
-        perf = [dict(r) for r in c.fetchall()]
-        total_sales = sum(p["sales"] for p in perf)
-        total_target = sum(p["target"] for p in perf)
-        state["performance"] = {
-            "기간": period,
-            "팀 총매출": f"{total_sales:,.0f}만원",
-            "팀 목표": f"{total_target:,.0f}만원",
-            "달성률": f"{round(total_sales/total_target*100) if total_target else 0}%",
-            "팀원별": perf,
-        }
-
-        c.execute("SELECT COUNT(*) as cnt FROM onboarding_plans WHERE status='active'")
-        state["onboarding_active"] = c.fetchone()["cnt"]
-
-        c.execute("SELECT COUNT(*) as cnt FROM followups WHERE status='pending' AND followup_date <= ?", (today,))
-        state["overdue_followups"] = c.fetchone()["cnt"]
-
-    finally:
-        conn.close()
-    return state
 
 
 class TeamMeeting:
@@ -104,14 +58,14 @@ class TeamMeeting:
         self.client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     AGENT_LABELS = {
-        "marketing": "📊 마케팅 에이전트",
-        "customer_management": "👥 고객관리 에이전트",
-        "performance": "📈 실적관리 에이전트",
-        "onboarding": "🎓 온보딩 에이전트",
-        "communication": "💬 커뮤니케이션 에이전트",
+        "customer":  "👥 고객관리 에이전트",
+        "contract":  "📋 계약관리 에이전트",
+        "schedule":  "📅 일정관리 에이전트",
+        "report":    "📈 실적관리 에이전트",
+        "sns":       "📱 SNS 에이전트",
     }
 
-    # ── Phase 1: 전략 수립 + 필요 정보 요청 ──────────────────────────────
+    # ── Phase 1: 전략 수립 ──────────────────────────────────────────────────
     def plan(self, topic: str = None) -> dict:
         state = gather_team_state()
         state_text = json.dumps(state, ensure_ascii=False, indent=2)
@@ -125,8 +79,8 @@ class TeamMeeting:
                 "role": "user",
                 "content": (
                     f"현재 팀 현황:\n{state_text}{topic_line}\n\n"
-                    "이 팀이 성장하기 위한 전략을 수립하고, "
-                    "각 에이전트 업무 실행에 필요한 정보를 사용자에게 요청해 주세요."
+                    "이 팀이 이번 주 성장하기 위한 전략을 수립하고, "
+                    "각 에이전트 업무 실행에 필요한 정보를 팀장에게 요청해 주세요."
                 ),
             }],
         )
@@ -147,7 +101,7 @@ class TeamMeeting:
         plan_data["state"] = state
         return plan_data
 
-    # ── Phase 2: 사용자 답변 받아 실행 ────────────────────────────────────
+    # ── Phase 2: 팀장 답변 받아 에이전트 실행 ─────────────────────────────
     def execute(self, assignments: list, answers: dict) -> dict:
         log = []
         start = datetime.now()
@@ -155,31 +109,31 @@ class TeamMeeting:
         def note(speaker, msg):
             log.append({"speaker": speaker, "message": msg, "time": datetime.now().strftime("%H:%M:%S")})
 
-        note("🏢 시스템", "준비 완료 신호 수신. 에이전트 실행을 시작합니다.")
+        note("🏢 시스템", "에이전트 실행을 시작합니다.")
         executed = []
 
         for asgn in assignments:
             agent_key = asgn.get("agent", "")
             if agent_key not in self.orchestrator.agents:
+                note("🏢 시스템", f"⚠️ 알 수 없는 에이전트: {agent_key}")
                 continue
 
             label = self.AGENT_LABELS.get(agent_key, agent_key)
             task_title = asgn.get("task_title", "")
-            exec_prompt_template = asgn.get("execution_prompt", asgn.get("task_description", ""))
+            exec_template = asgn.get("execution_prompt", asgn.get("task_description", ""))
             agent_answers = answers.get(agent_key, {})
 
-            # 템플릿에 사용자 답변 삽입
-            exec_prompt = exec_prompt_template
+            # 템플릿에 팀장 답변 삽입
+            exec_prompt = exec_template
             for k, v in agent_answers.items():
                 exec_prompt = exec_prompt.replace(f"{{{{{k}}}}}", str(v))
 
             note(label, f"업무 시작: {task_title}")
-            note(label, f"실행 지시: {exec_prompt[:120]}...")
 
             try:
                 result = self.orchestrator.agents[agent_key].run(exec_prompt)
                 response_text = result.get("response", "")
-                note(label, f"✅ 완료: {response_text[:150]}")
+                note(label, f"✅ 완료: {response_text[:200]}")
                 executed.append({
                     "agent": agent_key,
                     "label": label,
@@ -191,17 +145,20 @@ class TeamMeeting:
                 note(label, f"❌ 오류: {e}")
 
         duration = int((datetime.now() - start).total_seconds())
-        note("🏢 시스템", f"전체 실행 완료. 소요시간 {duration}초, 실행 {len(executed)}건")
+        note("🏢 시스템", f"전체 실행 완료 — {duration}초, {len(executed)}건")
 
-        report = self._build_report(executed, duration)
-        return {"log": log, "report": report, "executed": executed, "duration": duration}
+        return {
+            "log": log,
+            "report": self._build_report(executed, duration),
+            "executed": executed,
+            "duration": duration,
+        }
 
-    def _build_report(self, executed, duration):
+    def _build_report(self, executed: list, duration: int) -> str:
         now = datetime.now().strftime("%Y년 %m월 %d일 %H:%M")
         lines = [f"## ✅ 팀 자율 실행 결과  |  {now}", ""]
         if not executed:
             return "\n".join(lines) + "\n실행된 업무가 없습니다."
-
         for e in executed:
             lines += [
                 f"### {e['label']} — {e['task_title']}",

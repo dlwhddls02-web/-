@@ -56,6 +56,35 @@ def _job_followup_check():
         log_activity("⏰ 스케줄러", f"팔로업 체크 오류: {e}", status="error")
 
 
+def _job_contract_renewal_check():
+    """만기 30일 이내 계약 알림"""
+    try:
+        from backend.memory import get_connection
+        from backend.tools.kakao_client import KakaoClient
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("""
+            SELECT ct.id, ct.insurance_type, ct.end_date, cu.name as customer_name
+            FROM contracts ct
+            LEFT JOIN customers cu ON ct.customer_id = cu.id
+            WHERE ct.status = 'active'
+              AND ct.end_date IS NOT NULL
+              AND julianday(ct.end_date) - julianday('now') BETWEEN 0 AND 30
+        """)
+        rows = [dict(r) for r in c.fetchall()]
+        conn.close()
+        if rows:
+            text = f"⚠️ [계약 만기 임박 {len(rows)}건]\n"
+            for r in rows[:5]:
+                text += f"• {r['customer_name']} ({r['insurance_type']}) — {r['end_date']}\n"
+            KakaoClient().send_me(text)
+            log_activity("⏰ 스케줄러", f"계약 만기 임박 {len(rows)}건 알림", status="warning")
+        else:
+            log_activity("⏰ 스케줄러", "계약 만기 점검 완료 — 해당 없음", status="info")
+    except Exception as e:
+        log_activity("⏰ 스케줄러", f"계약 만기 체크 오류: {e}", status="error")
+
+
 def _job_monthly_report():
     try:
         from backend.agents.orchestrator import Orchestrator
@@ -101,6 +130,12 @@ def _start_scheduler():
         _job_monthly_report,
         CronTrigger(day=1, hour=9, minute=0),
         id="monthly_report", replace_existing=True,
+    )
+    # 매일 오전 9시 — 계약 만기 30일 이내 알림
+    _scheduler.add_job(
+        _job_contract_renewal_check,
+        CronTrigger(hour=9, minute=30),
+        id="contract_renewal", replace_existing=True,
     )
     _scheduler.start()
     log_activity("⚙️ 시스템", "24시간 자동 운영 스케줄러 시작 (SNS 2종·주간회의·팔로업·월간보고)", status="success")
