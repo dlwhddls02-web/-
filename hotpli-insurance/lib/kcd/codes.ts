@@ -94,7 +94,36 @@ const SEED: [string, string][] = [
   ["R10", "복부 및 골반 통증"],
   ["R51", "두통"],
   ["Z00", "일반적 검사 및 조사(건강검진 등)"],
+  ["K80", "담석증"],
+  ["S43", "어깨 관절·인대의 탈구 및 염좌"],
+  ["S13", "목 부위의 탈구 및 염좌"],
+  ["S92", "발의 골절"],
+  ["J04", "급성 후두염 및 기관염"],
+  ["M62", "기타 근육 장애"],
 ];
+
+/**
+ * 표준 계약전 알릴의무의 "10대 질병" — KCD 코드 범위 매칭.
+ * (암, 백혈병, 고혈압, 협심증, 심근경색, 심장판막증, 간경화증, 뇌졸중증, 당뇨병, 에이즈·HIV)
+ * 판정은 코드 매칭(코드로만) — AI에게 맡기지 않는다.
+ */
+export const MAJOR_DISEASES: { name: string; re: RegExp }[] = [
+  { name: "암", re: /^C\d{2}/ },
+  { name: "백혈병", re: /^C9[1-5]/ },
+  { name: "고혈압", re: /^I1[0-5]/ },
+  { name: "협심증", re: /^I20/ },
+  { name: "심근경색", re: /^I2[1-3]/ },
+  { name: "심장판막증", re: /^I0[5-8]|^I3[4-7]/ },
+  { name: "간경화증", re: /^K74/ },
+  { name: "뇌졸중증(뇌출혈·뇌경색)", re: /^I6[0-3]/ },
+  { name: "당뇨병", re: /^E1[0-4]/ },
+  { name: "에이즈(HIV)", re: /^B2[0-4]|^Z21/ },
+];
+
+/** 코드가 10대 질병에 해당하면 질병명 반환 */
+export function majorDiseaseOf(code: string): string | null {
+  return MAJOR_DISEASES.find((d) => d.re.test(code))?.name ?? null;
+}
 
 export const KCD_CODES: ReadonlyMap<string, KcdEntry> = new Map(
   SEED.map(([code, name]) => [

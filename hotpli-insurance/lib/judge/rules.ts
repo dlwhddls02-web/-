@@ -1,6 +1,7 @@
 import "server-only";
 import type { TreatmentRow } from "@/lib/pdf/parse-hira";
 import type { Evidence, Verdict } from "@/types";
+import { majorDiseaseOf } from "@/lib/kcd/codes";
 import { QUESTIONS, type QuestionDef } from "./questions";
 
 /**
@@ -107,31 +108,89 @@ function judgeOne(
     }
 
     case "surgery": {
-      const surgery = inWindow.filter((r) => /수술/.test(r.detail));
-      if (surgery.length > 0) {
+      // 강한 수술 신호: "수술-OO술" 표기, OO절제술/봉합술 등 구체적 술식명
+      // (심평원 세부내역의 "처치 및 수술료" 항목명은 부목·드레싱 같은 단순 처치도
+      //  포함하므로, '수술' 단어만으로는 확정하지 않는다)
+      const STRONG_SURGERY_RE =
+        /수술\s*-|절제술|절개술|봉합술|적출술|성형술|이식술|절단술|문합술|고정술|치환술|제거술(?!.*치석)|조성술|복강경|관혈적/;
+      const strong = inWindow.filter((r) => STRONG_SURGERY_RE.test(r.detail));
+      if (strong.length > 0) {
         return {
           ...base,
           verdict: "yes",
-          evidence: toEvidence(surgery),
-          reasoning: `기간 내 수술 표기 기록 ${surgery.length}건 확인`,
+          evidence: toEvidence(strong),
+          reasoning: `기간 내 구체적 술식명 기록 ${strong.length}건 확인`,
         };
       }
-      const hosp = inWindow.filter((r) => r.category === "입원");
-      if (hosp.length > 0) {
-        // 입원 기록은 있는데 수술 여부가 명시되지 않음 → 기록 해석은 AI로
+      // 약한 신호: '수술' 단어 포함(처치·수술료 항목 등) 또는 입원 기록
+      //  → 실제 수술인지 단순 처치인지 기록 해석 필요 (AI/설계사)
+      const weak = inWindow.filter(
+        (r) => /수술/.test(r.detail) || r.category === "입원",
+      );
+      if (weak.length > 0) {
         return {
           ...base,
           verdict: "needs_check",
-          evidence: toEvidence(hosp),
-          reasoning: "입원 기록이 있으나 수술 여부 미표기 — 기록 확인 필요",
-          candidateRows: hosp,
+          evidence: toEvidence(weak),
+          reasoning:
+            "수술 관련 항목 또는 입원 기록 존재 — 실제 수술 여부 기록 확인 필요",
+          candidateRows: weak,
         };
       }
       return {
         ...base,
         verdict: "no",
         evidence: [],
-        reasoning: "기간 내 수술 표기·입원 기록 없음",
+        reasoning: "기간 내 수술 관련 기록 없음",
+      };
+    }
+
+    case "drug": {
+      // 마약·수면제 등 '상시 복용'은 처방 내역만으로 확정 불가 → 약품명 해석은 AI로
+      const rx = inWindow.filter(
+        (r) => r.category === "처방조제" || r.fileKind === "prescription",
+      );
+      if (rx.length === 0) {
+        return {
+          ...base,
+          verdict: "no",
+          evidence: [],
+          reasoning: "기간 내 처방·조제 기록 없음",
+        };
+      }
+      return {
+        ...base,
+        verdict: "needs_check",
+        evidence: toEvidence(rx),
+        reasoning: `기간 내 처방 기록 ${rx.length}건 — 상시 복용 약물 해당 여부 해석 필요`,
+        candidateRows: rx,
+      };
+    }
+
+    case "major_disease": {
+      // 10대 질병은 KCD 코드 범위 매칭으로만 판정 (코드가 판단, AI 아님)
+      const hits = inWindow
+        .map((r) => ({
+          row: r,
+          diseases: r.kcdCodes
+            .map((c) => majorDiseaseOf(c))
+            .filter((n): n is string => !!n),
+        }))
+        .filter((h) => h.diseases.length > 0);
+      if (hits.length > 0) {
+        const names = [...new Set(hits.flatMap((h) => h.diseases))];
+        return {
+          ...base,
+          verdict: "yes",
+          evidence: toEvidence(hits.map((h) => h.row)),
+          reasoning: `10대 질병 해당 코드 확인: ${names.join(", ")} (${hits.length}건)`,
+        };
+      }
+      return {
+        ...base,
+        verdict: "no",
+        evidence: [],
+        reasoning: "기간 내 10대 질병 해당 상병코드 없음",
       };
     }
 
@@ -154,6 +213,19 @@ function judgeOne(
           d.rows.push(row);
           datesByGroup.set(key, d);
         }
+      }
+
+      // 단일 행에 30일 이상 투약이 기록된 경우 (세부·처방 파일의 총투약일수)
+      const single30 = inWindow.find(
+        (r) => r.days != null && r.days >= 30 && r.fileKind !== "basic",
+      );
+      if (single30) {
+        return {
+          ...base,
+          verdict: "yes",
+          evidence: toEvidence([single30]),
+          reasoning: `단일 처방 투약일수 ${single30.days}일 (≥30일 투약)`,
+        };
       }
 
       const medication30 = [...dayssByGroup.entries()].find(([, g]) => g.days >= 30);

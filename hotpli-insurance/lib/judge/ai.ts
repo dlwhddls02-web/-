@@ -66,6 +66,14 @@ export async function judgeByAi(
 ): Promise<AiJudgment | null> {
   if (!isAiConfigured() || candidateRows.length === 0) return null;
 
+  // 프롬프트 크기 제한: 최근 기록 우선 (재검 권고 등은 최근 기록에 있을 확률이 높다)
+  const MAX_ROWS = 120;
+  if (candidateRows.length > MAX_ROWS) {
+    candidateRows = [...candidateRows]
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
+      .slice(0, MAX_ROWS);
+  }
+
   const client = new Anthropic();
 
   const response = await client.messages.parse({
