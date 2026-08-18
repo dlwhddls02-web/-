@@ -154,12 +154,36 @@ export async function POST(
     });
   }
 
-  const { error: upsertError } = await supabase
+  // 재실행 멱등 저장: 기존 행은 update, 없는 질문만 insert
+  // (unique 인덱스 없이도 동작 — migrations/0003은 선택 사항)
+  const { data: existing } = await supabase
     .from("judgments")
-    .upsert(judgments, { onConflict: "analysis_id,question_key" });
-  if (upsertError) {
-    await supabase.from("analyses").update({ status: "uploaded" }).eq("id", id);
-    return NextResponse.json({ error: "db_error" }, { status: 500 });
+    .select("id, question_key")
+    .eq("analysis_id", id);
+  const existingByKey = new Map(
+    (existing ?? []).map((e) => [e.question_key as string, e.id as string]),
+  );
+
+  for (const j of judgments) {
+    const existingId = existingByKey.get(j.question_key);
+    const { error: saveError } = existingId
+      ? await supabase
+          .from("judgments")
+          .update({
+            ai_verdict: j.ai_verdict,
+            ai_evidence: j.ai_evidence,
+            ai_reasoning: j.ai_reasoning,
+            decided_by: j.decided_by,
+          })
+          .eq("id", existingId)
+      : await supabase.from("judgments").insert(j);
+    if (saveError) {
+      await supabase
+        .from("analyses")
+        .update({ status: "uploaded" })
+        .eq("id", id);
+      return NextResponse.json({ error: "db_error" }, { status: 500 });
+    }
   }
 
   await supabase
