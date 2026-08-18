@@ -29,6 +29,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  // 무료 크레딧 확인 (차감은 저장 성공 후)
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("free_credits")
+    .eq("id", user.id)
+    .single();
+  if (!profile || profile.free_credits <= 0) {
+    return NextResponse.json({ error: "no_credits" }, { status: 402 });
+  }
+
   let form: FormData;
   try {
     form = await request.formData();
@@ -134,6 +144,13 @@ export async function POST(request: NextRequest) {
   if (updateError) {
     return NextResponse.json({ error: "db_error" }, { status: 500 });
   }
+
+  // 저장까지 성공했을 때만 크레딧 차감
+  await supabase
+    .from("profiles")
+    .update({ free_credits: profile.free_credits - 1 })
+    .eq("id", user.id)
+    .gt("free_credits", 0);
 
   return NextResponse.json(
     { id: analysisId, files: Object.keys(filesMap) },

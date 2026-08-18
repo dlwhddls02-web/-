@@ -223,6 +223,11 @@ export default function NewAnalysisPage() {
           `${slotLabel ?? "업로드한"} 파일을 읽을 수 없어요. 심평원에서 받은 원본 PDF인지 확인해주세요.`,
         );
         break;
+      case "no_credits":
+        setError(
+          "무료 분석 횟수를 모두 사용했어요. 유료 플랜은 준비 중입니다.",
+        );
+        break;
       case "unauthorized":
         router.push("/login");
         break;

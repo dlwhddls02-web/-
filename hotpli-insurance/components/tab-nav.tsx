@@ -13,7 +13,7 @@ const tabs = [
 export function TabNav() {
   const pathname = usePathname();
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-20 bg-white/95 backdrop-blur border-t border-ink/5">
+    <nav className="fixed bottom-0 inset-x-0 z-20 bg-white/95 backdrop-blur border-t border-ink/5 print:hidden">
       <div className="mx-auto max-w-md flex">
         {tabs.map((tab) => {
           const active =
