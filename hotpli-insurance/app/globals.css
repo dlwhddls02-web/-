@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+/* Gmarket Sans — 제목·큰 숫자 전용 */
+@font-face {
+  font-family: "Gmarket Sans";
+  src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff") format("woff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gmarket Sans";
+  src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/*
+ * 화면설계 v3 디자인 토큰 (확정)
+ * lib/design/tokens.ts와 동기 유지할 것
+ */
+@theme {
+  /* 색 — warn은 확인필요·경고 전용. 다른 색 추가 금지 */
+  --color-violet: #0825c6;
+  --color-violet-soft: #6b6ce0;
+  --color-ink: #12141f;
+  --color-canvas: #f3f4fa;
+  --color-warn: #c26a09;
+
+  /* 폰트 */
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-display: "Gmarket Sans", "Pretendard Variable", Pretendard, sans-serif;
+
+  /* 라운드: 모달 40 > 카드 22 > 내부 16 > 버튼·인풋·배지 9999 */
+  --radius-modal: 40px;
+  --radius-card: 22px;
+  --radius-inner: 16px;
+
+  /* 그림자: 소프트 2단, 집중 요소만 딥 */
+  --shadow-soft: 0 2px 8px rgb(18 20 31 / 0.05), 0 10px 28px rgb(18 20 31 / 0.07);
+  --shadow-deep: 0 8px 20px rgb(8 37 198 / 0.22), 0 20px 48px rgb(18 20 31 / 0.14);
+}
+
+/* 주 행동(Primary)·해당 판정용 바이올렛 그라데이션 */
+@utility grad-violet {
+  background-image: linear-gradient(135deg, #0825c6 0%, #6b6ce0 100%);
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
