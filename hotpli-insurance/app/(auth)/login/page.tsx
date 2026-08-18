@@ -27,11 +27,17 @@ function LoginForm() {
     });
     setLoading(false);
     if (error) {
-      setError(
-        error.message === "Invalid login credentials"
-          ? "이메일 또는 비밀번호가 올바르지 않습니다."
-          : "로그인에 실패했습니다. 잠시 후 다시 시도해주세요.",
-      );
+      const msg = error.message.toLowerCase();
+      if (msg.includes("invalid login credentials")) {
+        setError("이메일 또는 비밀번호가 올바르지 않습니다.");
+      } else if (msg.includes("email not confirmed")) {
+        setError(
+          "이메일 인증이 아직 안 됐어요. 받은 메일함(스팸함 포함)을 확인하거나, Supabase에서 Confirm email을 끄고 다시 가입해주세요.",
+        );
+      } else {
+        // 원인 파악을 위해 서버가 준 메시지를 그대로 노출
+        setError(`로그인 실패: ${error.message}`);
+      }
       return;
     }
     const next = searchParams.get("next");

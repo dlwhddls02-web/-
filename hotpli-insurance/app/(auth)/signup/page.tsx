@@ -41,11 +41,23 @@ export default function SignupPage() {
     });
     setLoading(false);
     if (error) {
-      setError(
-        error.message.includes("already registered")
-          ? "이미 가입된 이메일입니다."
-          : "가입에 실패했습니다. 잠시 후 다시 시도해주세요.",
-      );
+      const msg = error.message.toLowerCase();
+      if (msg.includes("already registered")) {
+        setError("이미 가입된 이메일입니다.");
+      } else if (msg.includes("database error")) {
+        setError(
+          "데이터베이스 오류예요. Supabase SQL Editor에서 supabase/migrations/0001_init.sql이 적용됐는지 확인해주세요.",
+        );
+      } else if (msg.includes("signups not allowed") || msg.includes("disabled")) {
+        setError(
+          "가입이 막혀 있어요. Supabase 대시보드 → Authentication 설정에서 이메일 가입 허용을 확인해주세요.",
+        );
+      } else if (msg.includes("rate limit")) {
+        setError("요청이 너무 잦았어요. 1분 후 다시 시도해주세요.");
+      } else {
+        // 원인 파악을 위해 서버가 준 메시지를 그대로 노출
+        setError(`가입 실패: ${error.message}`);
+      }
       return;
     }
     // 이메일 확인이 꺼져 있으면 세션이 바로 생긴다 → 곧장 앱으로
