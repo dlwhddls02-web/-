@@ -18,7 +18,7 @@ export async function GET(
   const { data, error } = await supabase
     .from("analyses")
     .select(
-      "id, customer_name, customer_birth, status, file_path, parsed_rows, detected_kcd, created_at, confirmed_at",
+      "id, customer_name, customer_birth, status, file_path, files, parsed_rows, detected_kcd, created_at, confirmed_at",
     )
     .eq("id", id)
     .single();
@@ -26,5 +26,13 @@ export async function GET(
   if (error || !data) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
-  return NextResponse.json(data);
+
+  const { data: judgments } = await supabase
+    .from("judgments")
+    .select(
+      "id, question_key, ai_verdict, ai_evidence, ai_reasoning, final_verdict, final_memo, decided_by",
+    )
+    .eq("analysis_id", id);
+
+  return NextResponse.json({ ...data, judgments: judgments ?? [] });
 }
