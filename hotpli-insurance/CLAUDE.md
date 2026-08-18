@@ -25,6 +25,8 @@ Next.js App Router + TS + Tailwind v4 + Supabase + Claude API + Vercel
 - PDF 비밀번호 해제: `@jspawn/qpdf-wasm` (서버리스 호환 WASM). 시스템 qpdf 바이너리에 의존하지 않는다.
   wasm 파일은 `next.config.ts`의 `outputFileTracingIncludes` + `serverExternalPackages`로 배포에 포함
 - DB 스키마: `supabase/migrations/0001_init.sql` — Supabase SQL Editor에 그대로 적용 (적용법: `supabase/README.md`)
-- Storage 버킷 `analyses` (비공개). 경로 규칙: `{user_id}/{analysis_id}.pdf` — RLS가 첫 폴더=auth.uid()만 허용
+- 업로드는 심평원 자료 3종 슬롯: 기본진료내역(basic, 필수) / 세부진료정보(detail) / 처방조제정보(prescription).
+  `analyses.files` jsonb에 kind→경로 맵 저장, 3종은 같은 비밀번호 하나로 일괄 해제
+- Storage 버킷 `analyses` (비공개). 경로 규칙: `{user_id}/{analysis_id}/{kind}.pdf` — RLS가 첫 폴더=auth.uid()만 허용
 - 카카오 로그인: 키 발급 전까지 버튼 비활성. 발급 후 Supabase Auth Provider 설정 + `/auth/callback` 사용
 - 명령: `npm run dev` / `npm run build` / `npm run lint`

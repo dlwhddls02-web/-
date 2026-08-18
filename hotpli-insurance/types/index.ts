@@ -20,6 +20,18 @@ export interface Profile {
   created_at: string;
 }
 
+/** 심평원 자료 3종 구분 */
+export type FileKind = "basic" | "detail" | "prescription";
+
+export const FILE_KIND_LABEL: Record<FileKind, string> = {
+  basic: "기본진료내역",
+  detail: "세부진료정보",
+  prescription: "처방조제정보",
+};
+
+/** Storage 경로 맵 — {user_id}/{analysis_id}/{kind}.pdf */
+export type AnalysisFiles = Partial<Record<FileKind, string>>;
+
 export interface Analysis {
   id: string;
   owner_id: string;
@@ -27,6 +39,7 @@ export interface Analysis {
   customer_birth: string | null;
   status: AnalysisStatus;
   file_path: string | null;
+  files: AnalysisFiles | null;
   parsed_rows: number | null;
   detected_kcd: DetectedKcd[] | null;
   created_at: string;
