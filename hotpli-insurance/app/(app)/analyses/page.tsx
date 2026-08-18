@@ -44,7 +44,15 @@ export default async function AnalysesPage() {
         <ul className="space-y-3">
           {analyses.map((a) => (
             <li key={a.id}>
-              <Link href={`/analyze/${a.id}/progress`}>
+              <Link
+                href={
+                  a.status === "confirmed"
+                    ? `/analyze/${a.id}/report`
+                    : a.status === "needs_review"
+                      ? `/analyze/${a.id}/review`
+                      : `/analyze/${a.id}/progress`
+                }
+              >
                 <Card className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-[15px] font-semibold truncate">
