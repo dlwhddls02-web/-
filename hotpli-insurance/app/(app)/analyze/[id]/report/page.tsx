@@ -14,13 +14,24 @@ export default async function ReportPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: analysisData } = await supabase
+  let { data: analysisData } = await supabase
     .from("analyses")
     .select(
       "id, customer_name, customer_birth, status, parsed_rows, detected_kcd, summary, created_at, confirmed_at",
     )
     .eq("id", id)
     .single();
+  if (!analysisData) {
+    // summary 컬럼 미적용(마이그레이션 0004 이전) 환경 폴백
+    const retry = await supabase
+      .from("analyses")
+      .select(
+        "id, customer_name, customer_birth, status, parsed_rows, detected_kcd, created_at, confirmed_at",
+      )
+      .eq("id", id)
+      .single();
+    analysisData = retry.data as typeof analysisData;
+  }
   if (!analysisData) notFound();
   const analysis = analysisData as unknown as Analysis;
 

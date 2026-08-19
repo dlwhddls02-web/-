@@ -44,13 +44,24 @@ export default async function SharePage({
     return <ExpiredNotice message="링크 유효기간이 지났어요" />;
   }
 
-  const { data: analysisData } = await admin
+  let { data: analysisData } = await admin
     .from("analyses")
     .select(
       "customer_name, customer_birth, parsed_rows, detected_kcd, summary, created_at, status",
     )
     .eq("id", link.analysis_id)
     .single();
+  if (!analysisData) {
+    // summary 컬럼 미적용 환경 폴백
+    const retry = await admin
+      .from("analyses")
+      .select(
+        "customer_name, customer_birth, parsed_rows, detected_kcd, created_at, status",
+      )
+      .eq("id", link.analysis_id)
+      .single();
+    analysisData = retry.data as typeof analysisData;
+  }
   if (!analysisData) {
     return <ExpiredNotice message="리포트를 찾을 수 없어요" />;
   }
