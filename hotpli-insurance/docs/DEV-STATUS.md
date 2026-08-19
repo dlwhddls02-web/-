@@ -13,7 +13,10 @@
 - Supabase 프로젝트: ncvgnxucotbbkhvxttcz (Confirm email 꺼짐 — 오픈 전 다시 켤 것)
 - E2E: scripts/e2e-test.mjs (클라우드 검증 통과, 더미 계정 hotpli.e2e.*@gmail.com 수 개 생성됨 — 삭제 가능)
 
-## 다음: Vercel 배포 (진행 중)
+## Vercel 배포 (완료 2026-08-19)
+
+- 프로덕션 URL: https://hotpli-insurance.vercel.app (Ready, 랜딩·로그인·라우트 보호 smoke 통과)
+- 프로젝트: dlwhddls02-2573s-projects/hotpli-insurance (Hobby)
 
 - 방식: Vercel CLI + 사용자 토큰, 프로젝트 루트 = hotpli-insurance/ 하위 디렉토리
 - env: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (공개),
