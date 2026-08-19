@@ -29,13 +29,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  // 무료 크레딧 확인 (차감은 저장 성공 후)
+  // 무료 크레딧 확인 (차감은 저장 성공 후). free_credits = -1 은 무제한 계정
   const { data: profile } = await supabase
     .from("profiles")
     .select("free_credits")
     .eq("id", user.id)
     .single();
-  if (!profile || profile.free_credits <= 0) {
+  const unlimited = (profile?.free_credits ?? 0) < 0;
+  if (!profile || (!unlimited && profile.free_credits <= 0)) {
     return NextResponse.json({ error: "no_credits" }, { status: 402 });
   }
 
@@ -145,12 +146,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "db_error" }, { status: 500 });
   }
 
-  // 저장까지 성공했을 때만 크레딧 차감
-  await supabase
-    .from("profiles")
-    .update({ free_credits: profile.free_credits - 1 })
-    .eq("id", user.id)
-    .gt("free_credits", 0);
+  // 저장까지 성공했을 때만 크레딧 차감 — 서버 전용 함수(consume_credit)로만.
+  // (0005 마이그레이션 이전 환경 폴백: 직접 차감)
+  if (!unlimited) {
+    const { error: rpcError } = await supabase.rpc("consume_credit");
+    if (rpcError) {
+      await supabase
+        .from("profiles")
+        .update({ free_credits: profile.free_credits - 1 })
+        .eq("id", user.id)
+        .gt("free_credits", 0);
+    }
+  }
 
   return NextResponse.json(
     { id: analysisId, files: Object.keys(filesMap) },

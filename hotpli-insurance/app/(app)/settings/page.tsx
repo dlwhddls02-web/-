@@ -34,7 +34,9 @@ export default async function SettingsPage() {
         <div>
           <p className="text-[13px] text-ink/45">남은 무료 분석</p>
           <p className="font-display font-bold text-[24px] text-violet">
-            {profile?.free_credits ?? 0}회
+            {(profile?.free_credits ?? 0) < 0
+              ? "무제한"
+              : `${profile?.free_credits ?? 0}회`}
           </p>
         </div>
       </Card>
