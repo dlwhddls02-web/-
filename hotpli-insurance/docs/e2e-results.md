@@ -1,35 +1,26 @@
 # 클라우드 E2E 테스트 결과 (2026-08-19)
 
-## 상태: `network_blocked`
+## 상태: ✅ 전체 통과
 
-클라우드 세션 컨테이너의 네트워크 정책이 `*.supabase.co`로의 아웃바운드 연결을
-차단하고 있어 E2E 테스트를 진행할 수 없었다.
+부모 세션 컨테이너에서 실제 Supabase(운영 프로젝트)에 연결해 헤드리스 Chromium으로 검증.
 
-## 확인 내역
+## 통과한 흐름
 
-- 검사 명령: `curl -sS -o /dev/null -w "%{http_code}" https://ncvgnxucotbbkhvxttcz.supabase.co/auth/v1/health`
-- 결과: `curl: (56) CONNECT tunnel failed, response 403` (2회 반복 확인, 3초 간격)
-- 에이전트 프록시 상태 조회 결과: `connect_rejected — gateway answered 403 to CONNECT
-  (policy denial or upstream failure)`, host `ncvgnxucotbbkhvxttcz.supabase.co:443`
-- 판단: 프록시 게이트웨이의 정책 거부. DEV-STATUS.md에는 "네트워크 정책은 사용자가
-  설정→기능에서 완화함 — 새 세션 컨테이너부터 적용됨"이라 기록되어 있으나,
-  이 세션 컨테이너(2026-08-19 02:53 UTC 기준)에는 아직 완화된 정책이 적용되지 않았다.
+1. 회원가입 (Confirm email off) → 즉시 로그인 → /analyses
+2. 새 분석: 심평원 PDF 3종 업로드 — 암호화 자동 감지 → 비밀번호 입력 → 서버 해제 → 비공개 Storage 저장
+3. 자동 판정 파이프라인 — **1,235건 인식** (파서 단독 검증값과 정확히 일치)
+4. 질문별 판정 (질문 순서대로): 비해당 / 비해당 / 확인필요 / 해당 / 해당 / 해당 / 비해당
+   — 룰 엔진 사전 검증 정답과 일치 (AI 키 미설정 환경이라 재검사 항목은 확인필요 유지 = 정상)
+5. 확인·수정 화면 → 일괄 확정 → 리포트 (해당 3 · 비해당 3 · 확인필요 1)
+6. 이력 화면에 "확정됨" 배지 표시
 
-## 진행하지 못한 단계
+## 테스트 중 발견·수정한 사항
 
-1. ~~회원가입~~
-2. ~~심평원 PDF 3종 업로드 (비밀번호 해제)~~
-3. ~~자동 판정 파이프라인~~
-4. ~~확인·수정 → 확정~~
-5. ~~리포트 → 이력~~
+- (환경 이슈) 컨테이너 프록시 하에서 브라우저·Node fetch 프록시 설정 필요 — 앱 코드 문제 아님
+- 앱 코드 버그 없음
 
-`.env.local` 작성, 테스트 PDF 다운로드, dev 서버 기동 등 후속 단계는 네트워크
-차단이 확인된 시점에서 모두 생략했다 (Supabase 연결 없이는 가입 단계부터 불가).
+## 잔여 검증 항목
 
-## 다음 단계
-
-- 클라우드 환경 설정에서 `*.supabase.co` (최소한 `ncvgnxucotbbkhvxttcz.supabase.co:443`)
-  아웃바운드 허용 후 **새 세션 컨테이너**에서 재시도 필요
-  (환경 네트워크 정책은 컨테이너 시작 시점에 적용되므로 기존 컨테이너에는 반영되지 않음).
-- 재시도 시 절차는 `docs/DEV-STATUS.md`의 "진행 중 — 클라우드 E2E 테스트" 항목과
-  `scripts/e2e-test.mjs` 참조.
+- AI 판정 (ANTHROPIC_API_KEY 있는 환경에서 재검사·약물·수술해석 항목)
+- 공유 링크 페이지 (SUPABASE_SERVICE_ROLE_KEY 필요)
+- 테스트 계정 정리: Authentication → Users에서 hotpli.e2e.*@gmail.com 삭제 가능 (무료 크레딧 1회 소진된 더미 계정)
