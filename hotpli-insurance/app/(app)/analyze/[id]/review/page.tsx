@@ -9,6 +9,7 @@ import { VerdictBadge } from "@/components/verdict-badge";
 import { QUESTIONS } from "@/lib/judge/questions";
 import type { Evidence, Verdict } from "@/types";
 
+import { BackButton } from "@/components/back-button";
 interface JudgmentItem {
   id: string;
   question_key: string;
@@ -120,7 +121,8 @@ export default function ReviewPage({
 
   return (
     <div className="space-y-6">
-      <header className="space-y-1">
+      <header className="space-y-3">
+        <BackButton />
         <h1 className="font-display font-bold text-[22px]">확인·수정</h1>
         <p className="text-[14px] text-ink/50">
           AI 판정을 근거와 함께 확인하고, 필요하면 수정한 뒤 확정하세요

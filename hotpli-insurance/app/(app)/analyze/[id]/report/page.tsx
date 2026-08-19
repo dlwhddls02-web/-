@@ -7,6 +7,7 @@ import { ReportView } from "@/components/report-view";
 import { ReportActions } from "@/components/report-actions";
 import type { Analysis, Judgment } from "@/types";
 
+import { BackButton } from "@/components/back-button";
 /** S4 리포트 — 확정(또는 AI) 판정을 근거 원문과 함께 보여준다 */
 export default async function ReportPage({
   params,
@@ -46,7 +47,8 @@ export default async function ReportPage({
 
   return (
     <div className="space-y-6">
-      <header className="space-y-2">
+      <header className="space-y-3">
+        <BackButton />
         <h1 className="font-display font-bold text-[22px]">고지사항 리포트</h1>
         <div className="flex items-center gap-2 text-[14px] text-ink/50">
           <span>

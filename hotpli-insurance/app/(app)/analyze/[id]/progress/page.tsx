@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { AnalysisStatus, DetectedKcd, Verdict } from "@/types";
 
+import { BackButton } from "@/components/back-button";
 interface JudgmentRow {
   question_key: string;
   ai_verdict: Verdict;
@@ -119,7 +120,8 @@ export default function ProgressPage({
 
   return (
     <div className="space-y-6">
-      <header className="space-y-1">
+      <header className="space-y-3">
+        <BackButton />
         <h1 className="font-display font-bold text-[22px]">분석 진행</h1>
         <p className="text-[14px] text-ink/50">
           {analysis.customer_name || "이름 미입력"} ·{" "}

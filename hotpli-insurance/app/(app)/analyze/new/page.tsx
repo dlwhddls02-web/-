@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { FILE_KIND_LABEL, type FileKind } from "@/types";
 
+import { BackButton } from "@/components/back-button";
 const MAX_SIZE_MB = 20;
 
 /** 심평원 자료 3종 — 기본진료내역은 필수, 나머지는 있으면 함께 분석 */
@@ -240,7 +241,8 @@ export default function NewAnalysisPage() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-1">
+      <header className="space-y-3">
+        <BackButton />
         <h1 className="font-display font-bold text-[22px]">새 분석</h1>
         <p className="text-[14px] text-ink/50">
           심평원에서 받은 진료이력 PDF 3종을 올려주세요
