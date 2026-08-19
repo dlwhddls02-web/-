@@ -19,6 +19,11 @@
   → 사용자가 환경 네트워크 설정에서 허용해야 진행 가능
 - 테스트 계획: 헤드리스 Chromium(playwright-core, /opt/pw-browsers/chromium)으로
   가입 → 3종 PDF 업로드(비밀번호 필요) → 자동 판정 → 확인·수정 → 확정 → 리포트 → 스크린샷 전달
+- E2E 스크립트 완성본: `scripts/e2e-test.mjs`
+  실행법: PDF 3개를 스크래치패드 `hira/f1~f3.pdf`로 준비(구글드라이브 이종인1/2/3.pdf),
+  `.env.local` 작성, `npm run dev` 백그라운드 기동 후
+  `PDF_PASSWORD=<비밀번호> node scripts/e2e-test.mjs` (playwright-core 필요, 스크립트 내 SCRATCH 경로는 세션에 맞게 수정)
+- 네트워크 정책은 사용자가 설정→기능에서 완화함 — 새 세션 컨테이너부터 적용됨
 - 테스트용 PDF: 사용자 구글드라이브 이종인1/2/3.pdf (Google Drive MCP로 다운로드 가능)
   비밀번호는 사용자가 채팅으로 제공한 6자리+생년 형식 (채팅 기록 참조; 문서에 기록하지 않음)
 
