@@ -1,34 +1,26 @@
-# 개발 진행 상황 (2026-08-19 기준)
+# 개발 진행 상황 (2026-08-19 갱신)
 
 새 세션에서 이어받을 때 이 문서와 CLAUDE.md를 먼저 읽을 것.
 
-## 완료
+## 완료 (전부 실데이터 E2E 검증됨)
 
-- Sprint 1~4 전체 구현 완료 (셋업/스키마/로그인/3종 업로드/파이프라인/판정/리뷰/확정/리포트/공유링크/크레딧/랜딩)
-- 파서는 실제 심평원 샘플 3종(기본 91행·세부 799행·처방 345행, 누락 0)으로 검증 완료
-- 판정 저장은 update-or-insert — migrations/0003은 선택사항 (0001만 필수, 적용됨)
-- 통합 룰 판정 검증값(2026-08-18 기준, 본인 이력): 3개월 no / 재검사 needs_check /
-  입원 yes(2건) / 수술 yes(5건, 복강경 등) / 30일투약 yes(우루사 60일) / 10대질병 no
+- Sprint 1~4: 셋업 / 스키마+RLS / 이메일 로그인 / 심평원 3종 업로드(비밀번호 해제) /
+  파싱(1,235행·누락0) / KCD 매칭 / 룰 판정(기간·횟수 100% 코드) / AI 판정(structured output) /
+  확인·수정·확정 / 리포트 / 공유 링크(7일 만료) / 인쇄·PDF / 무료 크레딧 / 랜딩
+- 추가 개선: 병력 요약 카드(질환·약물·통계) / 질환별 고지 질문 역매핑 / 질병 연관성 참고(면책 포함,
+  자체 작성 테이블 + AI 폴백) / 근거 구조화 표시(날짜·병명(KCD)·수술명·약품명·일수)
+- 마이그레이션: 0001(필수, 적용됨) / 0002 files / 0004 summary (적용됨) / 0003 선택
+- Supabase 프로젝트: ncvgnxucotbbkhvxttcz (Confirm email 꺼짐 — 오픈 전 다시 켤 것)
+- E2E: scripts/e2e-test.mjs (클라우드 검증 통과, 더미 계정 hotpli.e2e.*@gmail.com 수 개 생성됨 — 삭제 가능)
 
-## 진행 중 — 클라우드 E2E 테스트
+## 다음: Vercel 배포 (진행 중)
 
-- 사용자 Supabase (브라우저에 공개되는 클라이언트 키):
-  - URL: https://ncvgnxucotbbkhvxttcz.supabase.co
-  - anon 키: 사용자가 채팅으로 제공 → .env.local에 설정 (커밋 금지)
-- 차단 요인: 클라우드 환경 네트워크 정책이 *.supabase.co CONNECT를 403으로 거부
-  → 사용자가 환경 네트워크 설정에서 허용해야 진행 가능
-- 테스트 계획: 헤드리스 Chromium(playwright-core, /opt/pw-browsers/chromium)으로
-  가입 → 3종 PDF 업로드(비밀번호 필요) → 자동 판정 → 확인·수정 → 확정 → 리포트 → 스크린샷 전달
-- E2E 스크립트 완성본: `scripts/e2e-test.mjs`
-  실행법: PDF 3개를 스크래치패드 `hira/f1~f3.pdf`로 준비(구글드라이브 이종인1/2/3.pdf),
-  `.env.local` 작성, `npm run dev` 백그라운드 기동 후
-  `PDF_PASSWORD=<비밀번호> node scripts/e2e-test.mjs` (playwright-core 필요, 스크립트 내 SCRATCH 경로는 세션에 맞게 수정)
-- 네트워크 정책은 사용자가 설정→기능에서 완화함 — 새 세션 컨테이너부터 적용됨
-- 테스트용 PDF: 사용자 구글드라이브 이종인1/2/3.pdf (Google Drive MCP로 다운로드 가능)
-  비밀번호는 사용자가 채팅으로 제공한 6자리+생년 형식 (채팅 기록 참조; 문서에 기록하지 않음)
+- 방식: Vercel CLI + 사용자 토큰, 프로젝트 루트 = hotpli-insurance/ 하위 디렉토리
+- env: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (공개),
+  SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY (시크릿 — 사용자가 Vercel 대시보드에서 직접 입력)
+- 배포 후: Supabase Auth URL Configuration의 Site URL을 배포 도메인으로 변경할 것
 
 ## 남은 것
 
-- AI 판정 실사용 검증 (ANTHROPIC_API_KEY 필요 — 사용자 로컬에는 설정됨)
-- Vercel 배포, 카카오 로그인 키, KCD 전체 사전(공공데이터 CSV → 빌드 스크립트), 서비스명/도메인
-- 공유 페이지는 SUPABASE_SERVICE_ROLE_KEY 필요 (로컬/배포 환경에만 설정)
+- 카카오 로그인 (개발자 앱 키 발급 후), KCD 전체 사전(공공데이터 CSV), 서비스명·도메인
+- AI 판정 실사용 검증은 사용자 로컬(키 보유)에서 확인
