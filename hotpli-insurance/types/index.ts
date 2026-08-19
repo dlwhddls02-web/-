@@ -62,6 +62,12 @@ export interface Evidence {
   provider: string;
   detail: string;
   sourceRow: number;
+  /** 구조화 표시용 (구버전 데이터에는 없을 수 있음 — UI는 detail로 폴백) */
+  kcdCodes?: string[];
+  diseaseNames?: string[];
+  surgeryName?: string;
+  days?: number | null;
+  category?: string;
 }
 
 export interface Judgment {

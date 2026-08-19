@@ -4,6 +4,7 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import type { TreatmentRow } from "@/lib/pdf/parse-hira";
 import type { Evidence, Verdict } from "@/types";
+import { rowToEvidence } from "./evidence";
 import type { QuestionDef } from "./questions";
 
 /**
@@ -193,12 +194,7 @@ ${rowsToPromptTable(candidateRows)}
   const evidence: Evidence[] = parsed.evidenceRows
     .map((n) => byRow.get(n))
     .filter((r): r is TreatmentRow => !!r)
-    .map((r) => ({
-      date: r.date,
-      provider: r.provider || "기관명 미상",
-      detail: r.detail,
-      sourceRow: r.sourceRow,
-    }));
+    .map(rowToEvidence);
 
   // evidence 없는 확정 판정은 무효 — needs_check로 강등
   const verdict: Verdict =

@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { EvidenceList } from "@/components/evidence-list";
 import { VerdictBadge } from "@/components/verdict-badge";
 import { QUESTIONS } from "@/lib/judge/questions";
 import type { Evidence, Verdict } from "@/types";
@@ -151,19 +152,9 @@ export default function ReviewPage({
               {(j.ai_evidence?.length ?? 0) > 0 && (
                 <details className="rounded-inner bg-canvas px-4 py-3">
                   <summary className="text-[13px] font-semibold text-violet cursor-pointer">
-                    근거 원문 {j.ai_evidence!.length}건 보기
+                    근거 {j.ai_evidence!.length}건 보기
                   </summary>
-                  <ul className="mt-2 space-y-2">
-                    {j.ai_evidence!.map((e, i) => (
-                      <li key={i} className="text-[12px] leading-relaxed">
-                        <span className="font-semibold">{e.date}</span>
-                        {" · "}
-                        <span>{e.provider}</span>
-                        <span className="text-ink/40"> (원문 {e.sourceRow}행)</span>
-                        <p className="text-ink/55 break-all">{e.detail}</p>
-                      </li>
-                    ))}
-                  </ul>
+                  <EvidenceList evidence={j.ai_evidence!} />
                 </details>
               )}
 

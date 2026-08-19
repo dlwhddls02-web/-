@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { EvidenceList } from "@/components/evidence-list";
 import { VerdictBadge } from "@/components/verdict-badge";
 import { QUESTIONS } from "@/lib/judge/questions";
 import type { HealthSummary } from "@/lib/report/summary";
@@ -173,22 +174,9 @@ export function ReportView({
               {showEvidence && evidence.length > 0 && (
                 <details className="rounded-inner bg-canvas px-4 py-3">
                   <summary className="text-[13px] font-semibold text-violet cursor-pointer">
-                    근거 원문 {evidence.length}건 보기
+                    근거 {evidence.length}건 보기
                   </summary>
-                  <ul className="mt-2 space-y-2">
-                    {evidence.map((e, i) => (
-                      <li key={i} className="text-[12px] leading-relaxed">
-                        <span className="font-semibold">{e.date}</span>
-                        {" · "}
-                        <span>{e.provider}</span>
-                        <span className="text-ink/40">
-                          {" "}
-                          (원문 {e.sourceRow}행)
-                        </span>
-                        <p className="text-ink/55 break-all">{e.detail}</p>
-                      </li>
-                    ))}
-                  </ul>
+                  <EvidenceList evidence={evidence} />
                 </details>
               )}
             </Card>

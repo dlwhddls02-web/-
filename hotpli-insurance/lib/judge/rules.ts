@@ -2,6 +2,7 @@ import "server-only";
 import type { TreatmentRow } from "@/lib/pdf/parse-hira";
 import type { Evidence, Verdict } from "@/types";
 import { majorDiseaseOf } from "@/lib/kcd/codes";
+import { buildEvidence, extractDrugTokens } from "./evidence";
 import { QUESTIONS, type QuestionDef } from "./questions";
 
 /**
@@ -19,21 +20,10 @@ export interface RuleJudgment {
   candidateRows: TreatmentRow[];
 }
 
-const MAX_EVIDENCE = 10;
-
 /** 기준일에서 n개월 전 날짜 (YYYY-MM-DD) — Date 산술로만 계산 */
 export function monthsBefore(base: Date, months: number): string {
   const d = new Date(Date.UTC(base.getFullYear(), base.getMonth() - months, base.getDate()));
   return d.toISOString().slice(0, 10);
-}
-
-function toEvidence(rows: TreatmentRow[]): Evidence[] {
-  return rows.slice(0, MAX_EVIDENCE).map((r) => ({
-    date: r.date,
-    provider: r.provider || "기관명 미상",
-    detail: r.detail,
-    sourceRow: r.sourceRow,
-  }));
 }
 
 /** 그룹 키: KCD 코드가 있으면 코드, 없으면 기관명 (동일 질환 추정 단위) */
@@ -73,7 +63,7 @@ function judgeOne(
       return {
         ...base,
         verdict: "yes",
-        evidence: toEvidence(inWindow),
+        evidence: buildEvidence(inWindow),
         reasoning: `${from} 이후 진료·처방 기록 ${inWindow.length}건 확인`,
       };
     }
@@ -83,7 +73,7 @@ function judgeOne(
       return {
         ...base,
         verdict: "needs_check",
-        evidence: toEvidence(inWindow),
+        evidence: buildEvidence(inWindow),
         reasoning: `기간 내 기록 ${inWindow.length}건 존재 — 재검사 권고 여부는 기록 해석 필요`,
         candidateRows: inWindow,
       };
@@ -95,7 +85,7 @@ function judgeOne(
         return {
           ...base,
           verdict: "yes",
-          evidence: toEvidence(hosp),
+          evidence: buildEvidence(hosp),
           reasoning: `기간 내 입원 기록 ${hosp.length}건 확인`,
         };
       }
@@ -118,7 +108,7 @@ function judgeOne(
         return {
           ...base,
           verdict: "yes",
-          evidence: toEvidence(strong),
+          evidence: buildEvidence(strong, { preferNamedSurgery: true }),
           reasoning: `기간 내 구체적 술식명 기록 ${strong.length}건 확인`,
         };
       }
@@ -131,7 +121,7 @@ function judgeOne(
         return {
           ...base,
           verdict: "needs_check",
-          evidence: toEvidence(weak),
+          evidence: buildEvidence(weak),
           reasoning:
             "수술 관련 항목 또는 입원 기록 존재 — 실제 수술 여부 기록 확인 필요",
           candidateRows: weak,
@@ -161,7 +151,7 @@ function judgeOne(
       return {
         ...base,
         verdict: "needs_check",
-        evidence: toEvidence(rx),
+        evidence: buildEvidence(rx),
         reasoning: `기간 내 처방 기록 ${rx.length}건 — 상시 복용 약물 해당 여부 해석 필요`,
         candidateRows: rx,
       };
@@ -182,7 +172,7 @@ function judgeOne(
         return {
           ...base,
           verdict: "yes",
-          evidence: toEvidence(hits.map((h) => h.row)),
+          evidence: buildEvidence(hits.map((h) => h.row)),
           reasoning: `10대 질병 해당 코드 확인: ${names.join(", ")} (${hits.length}건)`,
         };
       }
@@ -216,14 +206,17 @@ function judgeOne(
       }
 
       // 단일 행에 30일 이상 투약이 기록된 경우 (세부·처방 파일의 총투약일수)
-      const single30 = inWindow.find(
+      // 같은 조건이면 약품명이 읽히는 행을 근거로 우선 선택
+      const long30 = inWindow.filter(
         (r) => r.days != null && r.days >= 30 && r.fileKind !== "basic",
       );
+      const single30 =
+        long30.find((r) => extractDrugTokens(r.detail).length > 0) ?? long30[0];
       if (single30) {
         return {
           ...base,
           verdict: "yes",
-          evidence: toEvidence([single30]),
+          evidence: buildEvidence([single30]),
           reasoning: `단일 처방 투약일수 ${single30.days}일 (≥30일 투약)`,
         };
       }
@@ -233,7 +226,7 @@ function judgeOne(
         return {
           ...base,
           verdict: "yes",
-          evidence: toEvidence(medication30[1].rows),
+          evidence: buildEvidence(medication30[1].rows),
           reasoning: `동일 질환/기관 처방일수 합계 ${medication30[1].days}일 (≥30일 투약)`,
         };
       }
@@ -243,7 +236,7 @@ function judgeOne(
         return {
           ...base,
           verdict: "yes",
-          evidence: toEvidence(treat7[1].rows),
+          evidence: buildEvidence(treat7[1].rows),
           reasoning: `동일 질환/기관 진료일 ${treat7[1].dates.size}일 (≥7일 계속 치료)`,
         };
       }
