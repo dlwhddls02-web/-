@@ -47,7 +47,7 @@ export default async function SharePage({
   const { data: analysisData } = await admin
     .from("analyses")
     .select(
-      "customer_name, customer_birth, parsed_rows, detected_kcd, created_at, status",
+      "customer_name, customer_birth, parsed_rows, detected_kcd, summary, created_at, status",
     )
     .eq("id", link.analysis_id)
     .single();
@@ -83,6 +83,7 @@ export default async function SharePage({
         <ReportView
           analysis={analysis}
           judgments={(judgmentsData ?? []) as unknown as Judgment[]}
+          summary={analysis.summary as import("@/lib/report/summary").HealthSummary | null}
           showEvidence={false}
         />
       </main>

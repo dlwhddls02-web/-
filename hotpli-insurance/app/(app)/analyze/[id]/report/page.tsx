@@ -17,7 +17,7 @@ export default async function ReportPage({
   const { data: analysisData } = await supabase
     .from("analyses")
     .select(
-      "id, customer_name, customer_birth, status, parsed_rows, detected_kcd, created_at, confirmed_at",
+      "id, customer_name, customer_birth, status, parsed_rows, detected_kcd, summary, created_at, confirmed_at",
     )
     .eq("id", id)
     .single();
@@ -70,7 +70,11 @@ export default async function ReportPage({
         </Card>
       )}
 
-      <ReportView analysis={analysis} judgments={judgments} />
+      <ReportView
+        analysis={analysis}
+        judgments={judgments}
+        summary={analysis.summary as import("@/lib/report/summary").HealthSummary | null}
+      />
     </div>
   );
 }

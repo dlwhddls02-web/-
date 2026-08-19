@@ -40,6 +40,8 @@ export interface Analysis {
   status: AnalysisStatus;
   file_path: string | null;
   files: AnalysisFiles | null;
+  /** 병력 요약·질환 맵·위험 참고 — lib/report/summary.ts HealthSummary */
+  summary: unknown | null;
   parsed_rows: number | null;
   detected_kcd: DetectedKcd[] | null;
   created_at: string;

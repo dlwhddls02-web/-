@@ -1,10 +1,22 @@
 import { Card } from "@/components/ui/card";
 import { VerdictBadge } from "@/components/verdict-badge";
 import { QUESTIONS } from "@/lib/judge/questions";
+import type { HealthSummary } from "@/lib/report/summary";
 import type { Analysis, Evidence, Judgment, Verdict } from "@/types";
 
 const questionLabel = (key: string) =>
   QUESTIONS.find((q) => q.key === key)?.label ?? key;
+
+/** 질환 중심 보기에서 쓰는 짧은 질문 이름 */
+const SHORT_LABEL: Record<string, string> = {
+  q_3m_medication: "3개월 진료",
+  q_3m_drug: "약물 복용",
+  q_1y_recheck: "재검사",
+  q_5y_hospitalization: "입원",
+  q_5y_surgery: "수술",
+  q_5y_long_treatment: "장기치료·투약",
+  q_5y_major_disease: "10대 질병",
+};
 
 export function finalVerdictOf(j: Judgment): Verdict {
   return j.final_verdict ?? j.ai_verdict;
@@ -25,6 +37,7 @@ export function sortJudgments(judgments: Judgment[]): Judgment[] {
 export function ReportView({
   analysis,
   judgments,
+  summary,
   showEvidence = true,
 }: {
   analysis: Pick<
@@ -37,6 +50,7 @@ export function ReportView({
     | "status"
   >;
   judgments: Judgment[];
+  summary?: HealthSummary | null;
   showEvidence?: boolean;
 }) {
   const sorted = sortJudgments(judgments);
@@ -47,8 +61,61 @@ export function ReportView({
       .length,
   };
 
+  const stats = summary?.stats;
+
   return (
     <div className="space-y-6">
+      {/* 병력 요약 — 판정 전에 전체 그림부터 */}
+      {stats && (
+        <Card className="space-y-3">
+          <p className="text-[13px] font-semibold text-ink/60">병력 요약</p>
+          {summary?.aiSummary && (
+            <p className="text-[14px] leading-relaxed">{summary.aiSummary}</p>
+          )}
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-inner bg-canvas py-2.5">
+              <p className="font-display font-bold text-[18px]">
+                {stats.totalRows}
+              </p>
+              <p className="text-[11px] text-ink/45">진료 기록</p>
+            </div>
+            <div className="rounded-inner bg-canvas py-2.5">
+              <p className="font-display font-bold text-[18px]">
+                {stats.diseaseCount}
+              </p>
+              <p className="text-[11px] text-ink/45">질환 코드</p>
+            </div>
+            <div className="rounded-inner bg-canvas py-2.5">
+              <p
+                className={`font-display font-bold text-[18px] ${stats.hospitalizationCount > 0 ? "text-violet" : ""}`}
+              >
+                {stats.hospitalizationCount}
+              </p>
+              <p className="text-[11px] text-ink/45">입원</p>
+            </div>
+          </div>
+          {stats.firstDate && stats.lastDate && (
+            <p className="text-[12px] text-ink/45">
+              조회 기간 {stats.firstDate} ~ {stats.lastDate}
+            </p>
+          )}
+          {stats.topDiseases.length > 0 && (
+            <p className="text-[13px] leading-relaxed">
+              <span className="text-ink/45">주요 질환 · </span>
+              {stats.topDiseases
+                .map((d) => `${d.name} ${d.count}회`)
+                .join(", ")}
+            </p>
+          )}
+          {stats.topDrugs.length > 0 && (
+            <p className="text-[13px] leading-relaxed">
+              <span className="text-ink/45">주요 약물 · </span>
+              {stats.topDrugs.map((d) => d.name).join(", ")}
+            </p>
+          )}
+        </Card>
+      )}
+
       {/* 요약 */}
       <div className="grid grid-cols-3 gap-2 text-center">
         <Card className="!p-3 py-4">
@@ -128,6 +195,74 @@ export function ReportView({
           );
         })}
       </div>
+
+      {/* 질환 중심 보기: 질환별로 어떤 고지 질문에 걸리는지 */}
+      {summary?.diseaseMap && summary.diseaseMap.length > 0 && (
+        <Card className="space-y-3">
+          <p className="text-[13px] font-semibold text-ink/60">
+            질환별 고지 관련
+          </p>
+          <ul className="space-y-2.5">
+            {summary.diseaseMap.map((d) => (
+              <li key={d.code} className="space-y-1">
+                <p className="text-[14px] font-semibold">
+                  {d.name}{" "}
+                  <span className="text-[12px] text-ink/40 font-normal">
+                    {d.code}
+                  </span>
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {d.questionKeys.map((k) => (
+                    <span
+                      key={k}
+                      className="inline-flex items-center rounded-full bg-violet-soft/10 text-violet px-2.5 py-0.5 text-[11px] font-semibold"
+                    >
+                      {SHORT_LABEL[k] ?? k}
+                    </span>
+                  ))}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {/* 질병 위험 참고 — 설계사용 화면에서만 */}
+      {showEvidence &&
+        summary?.risk &&
+        summary.risk.items.length > 0 && (
+          <Card className="space-y-3">
+            <p className="text-[13px] font-semibold text-ink/60">
+              함께 살펴볼 질환 연관성{" "}
+              <span className="font-normal text-ink/35">(참고용)</span>
+            </p>
+            <ul className="space-y-2.5">
+              {summary.risk.items.map((item) => (
+                <li key={item.name} className="rounded-inner bg-canvas px-4 py-3">
+                  <p className="text-[13px] font-semibold">
+                    {item.name}{" "}
+                    <span className="text-[11px] text-ink/40 font-normal">
+                      {item.relatedCodes.join(", ")} ·{" "}
+                      {item.source === "ai" ? "AI 분석" : "일반 연관성"}
+                    </span>
+                  </p>
+                  <p className="text-[12px] text-ink/55 leading-relaxed">
+                    {item.basedOn} 병력 기준 — {item.reason}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            {summary.risk.aiNote && (
+              <p className="text-[12px] text-ink/55 leading-relaxed">
+                {summary.risk.aiNote}
+              </p>
+            )}
+            <p className="text-[11px] text-warn/90 leading-relaxed">
+              위 내용은 일반적으로 알려진 질환 연관성 정보이며, 의학적
+              진단·예측이 아닙니다. 보장 설계 참고 용도로만 사용하세요.
+            </p>
+          </Card>
+        )}
 
       {/* 발견 질환 요약 */}
       {showEvidence &&

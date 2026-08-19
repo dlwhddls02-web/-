@@ -4,8 +4,20 @@ import { extractText } from "@/lib/pdf/extract";
 import { parseHira, type TreatmentRow } from "@/lib/pdf/parse-hira";
 import { matchKcd } from "@/lib/kcd/match";
 import { judgeByRules } from "@/lib/judge/rules";
-import { judgeByAi, isAiConfigured } from "@/lib/judge/ai";
+import {
+  judgeByAi,
+  isAiConfigured,
+  summarizeHistoryByAi,
+  riskReportByAi,
+  type RiskAiInput,
+} from "@/lib/judge/ai";
 import { QUESTIONS } from "@/lib/judge/questions";
+import {
+  buildStats,
+  buildDiseaseMap,
+  type HealthSummary,
+} from "@/lib/report/summary";
+import { matchRiskAssociations } from "@/lib/risk/associations";
 import type { AnalysisFiles, FileKind } from "@/types";
 
 export const runtime = "nodejs";
@@ -186,10 +198,57 @@ export async function POST(
     }
   }
 
-  await supabase
+  // 5) 병력 요약 + 질환 중심 맵 + 질병 위험 참고 (집계는 코드, 해석·요약만 AI)
+  const stats = buildStats(allRows, detectedKcd);
+  const diseaseMap = buildDiseaseMap(
+    allRows,
+    detectedKcd,
+    judgments.map((j) => ({
+      question_key: j.question_key,
+      ai_verdict: j.ai_verdict as "yes" | "no" | "needs_check",
+      ai_evidence: j.ai_evidence,
+    })),
+  );
+  const allCodes = detectedKcd.map((k) => k.code);
+  const ruleRiskItems = matchRiskAssociations(allCodes);
+
+  const summary: HealthSummary = { stats, diseaseMap };
+  const aiInput: RiskAiInput = {
+    diseases: stats.topDiseases,
+    drugs: stats.topDrugs,
+    hospitalizationCount: stats.hospitalizationCount,
+    existingRiskNames: ruleRiskItems.map((r) => r.name),
+  };
+  try {
+    // AI 폴백: 룰 매칭 0건이어도 AI가 병력 기반으로 직접 생성
+    const [aiSummary, aiRisk] = await Promise.all([
+      summarizeHistoryByAi(aiInput),
+      riskReportByAi(aiInput),
+    ]);
+    if (aiSummary) summary.aiSummary = aiSummary;
+    summary.risk = {
+      items: [
+        ...ruleRiskItems,
+        ...(aiRisk?.items ?? []).map((i) => ({ ...i, source: "ai" as const })),
+      ],
+      aiNote: aiRisk?.note || undefined,
+    };
+  } catch {
+    // AI 실패해도 룰 기반 결과는 유지
+    summary.risk = { items: ruleRiskItems };
+  }
+
+  const { error: finalUpdateError } = await supabase
     .from("analyses")
-    .update({ status: "needs_review" })
+    .update({ status: "needs_review", summary })
     .eq("id", id);
+  if (finalUpdateError) {
+    // summary 컬럼 미적용(마이그레이션 0004 이전) 환경에서도 판정은 완료 처리
+    await supabase
+      .from("analyses")
+      .update({ status: "needs_review" })
+      .eq("id", id);
+  }
 
   return NextResponse.json({
     id,
