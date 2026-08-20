@@ -44,10 +44,11 @@ export function diseaseNameOf(code: string): string {
 }
 
 export function rowToEvidence(row: TreatmentRow): Evidence {
-  // 질병명이 없는 처방·조제 행은 약품명으로 대신 표시
+  // PDF 원문 상병명 최우선 → KCD 사전 → 처방·조제 행은 약품명
   const isRx = row.fileKind === "prescription" || row.category === "처방조제";
-  const diseaseNames =
-    row.kcdCodes.length > 0
+  const diseaseNames = row.diseaseName
+    ? [row.diseaseName]
+    : row.kcdCodes.length > 0
       ? row.kcdCodes.map(diseaseNameOf)
       : isRx
         ? extractDrugTokens(row.detail)

@@ -28,7 +28,11 @@ const ResultSchema = z.object({
   verdict: z.enum(["yes", "no", "needs_check"]),
   /** 근거가 된 행의 sourceRow 번호들 — yes/no 판단의 근거 행 */
   evidenceRows: z.array(z.number().int()),
-  /** 판단 이유 (한국어, 2문장 이내) */
+  /**
+   * 판단 이유 (한국어 2~3문장). 어떤 날짜의 어떤 진료·질환·검사 기록 때문에
+   * 그렇게 판단했는지 구체적으로. needs_check라면 설계사가 무엇을 어떻게
+   * 확인해야 하는지까지 안내.
+   */
   reasoning: z.string(),
 });
 
@@ -40,7 +44,9 @@ const SYSTEM = `너는 한국 보험설계사의 고지의무 확인을 돕는 �
 2. 판정은 yes(해당) / no(비해당) / needs_check(설계사 확인 필요) 셋 중 하나다.
 3. yes 또는 no로 판단하려면 반드시 근거 행 번호(evidenceRows)를 제시해야 한다.
 4. 기록만으로 확신할 수 없으면 반드시 needs_check를 반환한다. 추측으로 yes/no를 만들지 않는다.
-5. 고객에게 불리한 오판(누락)이 가장 위험하다. 애매하면 needs_check.`;
+5. 고객에게 불리한 오판(누락)이 가장 위험하다. 애매하면 needs_check.
+6. reasoning은 한국어 2~3문장으로, 어떤 날짜의 어떤 질환·검사·진료 기록 때문에 그렇게 판단했는지 구체적으로 쓴다.
+   needs_check라면 "무엇을 어떻게 확인해야 하는지"(예: 어느 시기 검진 결과의 재검 안내 여부를 고객에게 질문)까지 안내한다.`;
 
 export function isAiConfigured(): boolean {
   return !!process.env.ANTHROPIC_API_KEY;

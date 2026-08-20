@@ -10,19 +10,21 @@ export interface PageText {
   lines: string[];
 }
 
+export interface PositionedItem {
+  str: string;
+  x: number;
+  y: number;
+}
+
 export interface ExtractResult {
   pages: PageText[];
   /** 전체 줄을 순서대로 합친 배열 (파서 입력) */
   lines: string[];
+  /** 페이지별 좌표 포함 텍스트 조각 — 컬럼 기반 파싱용(기본진료정보) */
+  pageItems: PositionedItem[][];
   pageCount: number;
   /** 텍스트 레이어가 거의 없는 스캔본 — MVP는 "지원 예정" 안내 */
   isScanned: boolean;
-}
-
-interface PositionedItem {
-  str: string;
-  x: number;
-  y: number;
 }
 
 /** 같은 줄로 묶을 y좌표 허용 오차 (pt) */
@@ -33,6 +35,7 @@ export async function extractText(pdf: Uint8Array): Promise<ExtractResult> {
   const doc = await getDocumentProxy(pdf);
 
   const pages: PageText[] = [];
+  const pageItems: PositionedItem[][] = [];
   let totalItems = 0;
 
   for (let pageNo = 1; pageNo <= doc.numPages; pageNo++) {
@@ -48,6 +51,7 @@ export async function extractText(pdf: Uint8Array): Promise<ExtractResult> {
       items.push({ str, x: transform[4], y: transform[5] });
     }
     totalItems += items.length;
+    pageItems.push(items);
 
     // y좌표(위→아래) 기준으로 줄 그룹핑 후 x좌표(좌→우) 순으로 병합
     const lineGroups: { y: number; parts: PositionedItem[] }[] = [];
@@ -79,6 +83,7 @@ export async function extractText(pdf: Uint8Array): Promise<ExtractResult> {
   return {
     pages,
     lines: pages.flatMap((p) => p.lines),
+    pageItems,
     pageCount: doc.numPages,
     isScanned,
   };

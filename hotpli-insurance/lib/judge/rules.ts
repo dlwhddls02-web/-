@@ -2,7 +2,12 @@ import "server-only";
 import type { TreatmentRow } from "@/lib/pdf/parse-hira";
 import type { Evidence, Verdict } from "@/types";
 import { majorDiseaseOf } from "@/lib/kcd/codes";
-import { buildEvidence, extractDrugTokens } from "./evidence";
+import {
+  buildEvidence,
+  diseaseNameOf,
+  extractDrugTokens,
+  extractSurgeryName,
+} from "./evidence";
 import { QUESTIONS, type QuestionDef } from "./questions";
 
 /**
@@ -31,6 +36,39 @@ function groupKeyOf(row: TreatmentRow): string[] {
   if (row.kcdCodes.length > 0) return row.kcdCodes.map((c) => `kcd:${c}`);
   if (row.provider) return [`provider:${row.provider}`];
   return [];
+}
+
+/** 행의 표시용 진단명: PDF 원문 상병명 우선 → KCD 사전 */
+function rowName(r: TreatmentRow): string | null {
+  if (r.diseaseName) return r.diseaseName;
+  if (r.kcdCodes[0]) return diseaseNameOf(r.kcdCodes[0]);
+  return null;
+}
+
+/** 판정 이유에 쓸 그룹 이름: 질환명(코드) 또는 기관명 */
+function groupLabel(key: string, allRows: TreatmentRow[]): string {
+  if (key.startsWith("kcd:")) {
+    const code = key.slice(4);
+    const named = allRows.find(
+      (r) => r.kcdCodes.includes(code) && r.diseaseName,
+    );
+    return `${named?.diseaseName ?? diseaseNameOf(code)}(${code})`;
+  }
+  return key.slice("provider:".length);
+}
+
+/** 기간 내 주요 질환 상위 n개: "이름 x회, ..." */
+function topDiseasesText(rows: TreatmentRow[], n = 3): string {
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    const name = rowName(r);
+    if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, n)
+    .map(([name, c]) => `${name} ${c}회`)
+    .join(", ");
 }
 
 function judgeOne(
@@ -70,11 +108,12 @@ function judgeOne(
 
     case "recheck": {
       // 재검사(추가검사) 필요 소견은 청구 데이터만으로 확정 불가 → 문구 해석은 AI로
+      const top = topDiseasesText(inWindow);
       return {
         ...base,
         verdict: "needs_check",
         evidence: buildEvidence(inWindow),
-        reasoning: `기간 내 기록 ${inWindow.length}건 존재 — 재검사 권고 여부는 기록 해석 필요`,
+        reasoning: `최근 1년 내 진료 ${inWindow.length}건${top ? ` — 주요 진료: ${top}` : ""}. 심평원 자료에는 재검사(추가검사) 권고 여부가 직접 기록되지 않으므로, 검사·건강검진 후 재검 안내를 받았는지 고객 확인이 필요합니다`,
         candidateRows: inWindow,
       };
     }
@@ -82,11 +121,18 @@ function judgeOne(
     case "hospitalization": {
       const hosp = inWindow.filter((r) => r.category === "입원");
       if (hosp.length > 0) {
+        const detail = hosp
+          .slice(0, 3)
+          .map(
+            (r) =>
+              `${r.date} ${rowName(r) ?? "진단명 미상"}${r.days ? ` ${r.days}일` : ""}`,
+          )
+          .join(" / ");
         return {
           ...base,
           verdict: "yes",
           evidence: buildEvidence(hosp),
-          reasoning: `기간 내 입원 기록 ${hosp.length}건 확인`,
+          reasoning: `기간 내 입원 ${hosp.length}건 — ${detail}${hosp.length > 3 ? " 외" : ""}`,
         };
       }
       return {
@@ -105,11 +151,18 @@ function judgeOne(
         /수술\s*-|절제술|절개술|봉합술|적출술|성형술|이식술|절단술|문합술|고정술|치환술|제거술(?!.*치석)|조성술|복강경|관혈적/;
       const strong = inWindow.filter((r) => STRONG_SURGERY_RE.test(r.detail));
       if (strong.length > 0) {
+        const surgeryNames = [
+          ...new Set(
+            strong
+              .map((r) => extractSurgeryName(r.detail))
+              .filter((n): n is string => !!n),
+          ),
+        ].slice(0, 3);
         return {
           ...base,
           verdict: "yes",
           evidence: buildEvidence(strong, { preferNamedSurgery: true }),
-          reasoning: `기간 내 구체적 술식명 기록 ${strong.length}건 확인`,
+          reasoning: `기간 내 수술 기록 확인${surgeryNames.length ? ` — ${surgeryNames.join(", ")}` : ""} (관련 기록 ${strong.length}건)`,
         };
       }
       // 약한 신호: '수술' 단어 포함(처치·수술료 항목 등) 또는 입원 기록
@@ -213,21 +266,27 @@ function judgeOne(
       const single30 =
         long30.find((r) => extractDrugTokens(r.detail).length > 0) ?? long30[0];
       if (single30) {
+        const drug = extractDrugTokens(single30.detail)[0];
         return {
           ...base,
           verdict: "yes",
           evidence: buildEvidence([single30]),
-          reasoning: `단일 처방 투약일수 ${single30.days}일 (≥30일 투약)`,
+          reasoning: `${single30.date} ${drug ?? "처방 약물"} 투약일수 ${single30.days}일 — 30일 이상 투약에 해당`,
         };
       }
 
       const medication30 = [...dayssByGroup.entries()].find(([, g]) => g.days >= 30);
       if (medication30) {
+        const drugs = [
+          ...new Set(
+            medication30[1].rows.flatMap((r) => extractDrugTokens(r.detail)),
+          ),
+        ].slice(0, 3);
         return {
           ...base,
           verdict: "yes",
           evidence: buildEvidence(medication30[1].rows),
-          reasoning: `동일 질환/기관 처방일수 합계 ${medication30[1].days}일 (≥30일 투약)`,
+          reasoning: `${groupLabel(medication30[0], rows)} 처방 합계 ${medication30[1].days}일${drugs.length ? ` (${drugs.join(", ")})` : ""} — 30일 이상 투약에 해당`,
         };
       }
 
@@ -237,7 +296,7 @@ function judgeOne(
           ...base,
           verdict: "yes",
           evidence: buildEvidence(treat7[1].rows),
-          reasoning: `동일 질환/기관 진료일 ${treat7[1].dates.size}일 (≥7일 계속 치료)`,
+          reasoning: `${groupLabel(treat7[0], rows)} 통원 ${treat7[1].dates.size}일 — 7일 이상 계속 치료에 해당`,
         };
       }
 

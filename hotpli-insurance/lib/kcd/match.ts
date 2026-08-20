@@ -17,10 +17,15 @@ export function matchKcd(rows: TreatmentRow[]): DetectedKcd[] {
         existing.count += 1;
         if (row.date < existing.firstDate) existing.firstDate = row.date;
         if (row.date > existing.lastDate) existing.lastDate = row.date;
+        // 사전 미등재였는데 원문 상병명이 있는 행을 만나면 이름 보강
+        if (existing.name === "사전 미등재" && row.diseaseName) {
+          existing.name = row.diseaseName;
+        }
       } else {
         byCode.set(code, {
           code,
-          name: lookupKcd(code).name,
+          // PDF 원문 상병명 우선, 없으면 KCD 사전
+          name: row.diseaseName || lookupKcd(code).name,
           count: 1,
           firstDate: row.date,
           lastDate: row.date,

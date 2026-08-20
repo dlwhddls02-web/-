@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { extractText } from "@/lib/pdf/extract";
-import { parseHira, type TreatmentRow } from "@/lib/pdf/parse-hira";
+import {
+  parseHira,
+  parseBasicPositioned,
+  type TreatmentRow,
+} from "@/lib/pdf/parse-hira";
 import { matchKcd } from "@/lib/kcd/match";
 import { judgeByRules } from "@/lib/judge/rules";
 import {
@@ -95,8 +99,17 @@ export async function POST(
       scannedFiles++;
       continue;
     }
-    const parsed = parseHira(extracted.lines, kind, allRows.length);
-    allRows.push(...parsed.rows);
+    // 기본진료정보는 좌표(컬럼) 기반으로 파싱해 PDF 원문 상병명을 복원
+    const parsed =
+      kind === "basic"
+        ? parseBasicPositioned(extracted.pageItems, allRows.length)
+        : parseHira(extracted.lines, kind, allRows.length);
+    // 컬럼 파싱이 비면(양식 변형) 줄 기반으로 폴백
+    const finalParsed =
+      kind === "basic" && parsed.totalRows === 0
+        ? parseHira(extracted.lines, kind, allRows.length)
+        : parsed;
+    allRows.push(...finalParsed.rows);
   }
 
   // 2) 인식 결과가 없으면 판정하지 않는다 (기록 없음 ≠ 비해당 단정 금지)
