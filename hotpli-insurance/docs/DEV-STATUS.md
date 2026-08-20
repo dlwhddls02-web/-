@@ -15,7 +15,9 @@
 
 ## Vercel 배포 (완료 2026-08-19)
 
-- 프로덕션 URL: https://hotpli-insurance.vercel.app (Ready, 랜딩·로그인·라우트 보호 smoke 통과)
+- 프로덕션 URL: https://hotpli-insurance.vercel.app
+- 실서버 E2E 전체 통과 (2026-08-20): 가입→3종 업로드→1,235건 판정→AI 판정 작동→확정→리포트→공유링크(고객 화면, 진료상세 비노출)까지
+- 시크릿(SERVICE_ROLE·ANTHROPIC) 적용됨, 운영자 계정 무제한 크레딧(0005) 적용
 - 프로젝트: dlwhddls02-2573s-projects/hotpli-insurance (Hobby)
 
 - 방식: Vercel CLI + 사용자 토큰, 프로젝트 루트 = hotpli-insurance/ 하위 디렉토리
